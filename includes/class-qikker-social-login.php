@@ -393,7 +393,7 @@ class QikkerSocialLogin
                         $downloaded_file = download_url($hybridUserProfile->photoURL);
 
                         $downloaded_data = array(
-                            'name'     => $user_or_error->ID . '.jpg',
+                            'name'     => $user_id_or_error . '.jpg',
                             'tmp_name' => $downloaded_file,
                             'ext'      => 'jpg',
                             'type'     => 'image',
@@ -402,7 +402,11 @@ class QikkerSocialLogin
 
                         var_dump($results);
 
-                        unlink($downloaded_file);
+                        if (file_exists($downloaded_file)) {
+
+                            unlink($downloaded_file);
+
+                        }
 
                     }
 
