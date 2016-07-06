@@ -188,27 +188,36 @@ class QikkerSocialLogin
     public function run()
     {
 
-        $this->loader->add_filter('wp_authenticate_user', $this, 'authenticate_user', 10, 2);
+        $this->loader->add_filter('check_password', $this, 'check_password', 10, 4);
 
         $this->loader->run();
 
     }
 
-    public function authenticate_user($user, $provider) {
+    public function check_password($check, $provider, $hash, $user_id) {
 
         $providers = $this->getProviderConfig();
 
-        if ($user && isset($providers[$provider])) {
+        $user = get_user_by('id', $user_id);
 
-            if ($this->getHybridAuthInstance()->isConnectedWith($provider)) {
+        //Add POST validation to invalid this
+        if ($user && isset($providers[$provider]) && !is_admin()) {
 
-                return $user;
+            $hybridAuthInstance = self::getInstance()->getHybridAuthInstance();
+
+            if ($hybridAuthInstance->isConnectedWith($provider)) {
+
+                $providerAdapter = $hybridAuthInstance->authenticate($provider);
+
+                $hybridUserProfile = $providerAdapter->getUserProfile();
+
+                $check = $hybridUserProfile->email === $user->user_email;
 
             }
 
         }
 
-        return false;
+        return $check;
 
     }
 
@@ -325,7 +334,7 @@ class QikkerSocialLogin
 
     }
 
-    public static function loginFacebook()
+    public static function login($provider)
     {
 
         $hybridAuthInstance = self::getInstance()->getHybridAuthInstance();
@@ -343,7 +352,11 @@ class QikkerSocialLogin
 
             $hybridUserProfile = $providerAdapter->getUserProfile();
 
-            $wp_user = get_user_by('email', $hybridUserProfile->email);
+            $email = $hybridUserProfile->email;
+
+            var_dump($hybridUserProfile);
+
+            $wp_user = get_user_by('email', $email);
 
             if ($wp_user) {
 
@@ -355,41 +368,41 @@ class QikkerSocialLogin
             }
 
             if (apply_filters('qikker_social_login_create_users', true) && !$wp_user) {
-                
-                $user_id_or_error = register_new_user($hybridUserProfile->email, $hybridUserProfile->email); //new WP_Error('algum erro');//
+
+                $email_prefix = substr($email, 0, strpos($email, '@') );
+                $user_id_or_error = register_new_user($email_prefix, $email); //new WP_Error('algum erro');//
 
                 if (is_wp_error($user_id_or_error)) {
 
+                    //Send an e-mail to the blog admin / add filter
                     do_action('qikker_social_login_authentication_error', $user_id_or_error);
 
                 } else {
 
-                    $userdata = get_userdata($user_id_or_error);
+                    wp_set_current_user ( $user_id_or_error );
+                    wp_set_auth_cookie  ( $user_id_or_error );
 
+                    $userdata = get_userdata($user_id_or_error);
                     $userdata->user_nicename = $hybridUserProfile->displayName;
                     $userdata->display_name  = $hybridUserProfile->displayName;
 
-                    $credentials = array('user_login' => $hybridUserProfile->email, 'user_password' => 'Facebook');
-                    $user_or_error = wp_signon($credentials);
-
-                    var_dump($user_or_error);
-
-                    wp_update_user($userdata);
-                    
-                    update_user_meta($user_id_or_error, 'first_name', $hybridUserProfile->firstName);
-                    update_user_meta($user_id_or_error, 'last_name', $hybridUserProfile->lastName);
+                    //Change to use wp_update_user
+                    update_user_meta($user_id_or_error, 'first_name',  $hybridUserProfile->firstName);
+                    update_user_meta($user_id_or_error, 'last_name',   $hybridUserProfile->lastName);
                     update_user_meta($user_id_or_error, 'description', $hybridUserProfile->description);
 
-                    //Check gravatar
-                    $gravatar = @file_get_contents('http://gravatar.com/avatar/a' . md5($hybridUserProfile->email) . '.png?d=404');
-                    if (!$gravatar || true && $hybridUserProfile->photoURL) {
+                    wp_update_user($userdata);
+
+                    if ($hybridUserProfile->photoURL) {
 
                         if (!function_exists('download_url')) {
 
                             require_once ABSPATH . '/wp-admin/includes/file.php';
+                            require_once ABSPATH . '/wp-admin/includes/media.php';
+                            require_once ABSPATH . '/wp-admin/includes/image.php';
 
                         }
-                        var_dump($hybridUserProfile->photoURL);
+
                         $downloaded_file = download_url($hybridUserProfile->photoURL);
 
                         $downloaded_data = array(
@@ -398,9 +411,8 @@ class QikkerSocialLogin
                             'ext'      => 'jpg',
                             'type'     => 'image',
                         );
-                        $results = wp_handle_sideload($downloaded_data, array('test_form' => false));
 
-                        var_dump($results);
+                        $results = media_handle_sideload($downloaded_data, 0);
 
                         if (file_exists($downloaded_file)) {
 
