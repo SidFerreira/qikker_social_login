@@ -209,21 +209,22 @@ class QikkerSocialLogin
 
     public function doParseRequest($valid, $wp, $extra_query_vars) {
 
-        if (isset($_GET['action'])) {
+        if (isset($_GET['action']) && isset($_GET['provider'])) {
+
+            $provider = $_GET['provider'];
 
             $redirect_to = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
 
             if ($_GET['action'] === self::ACTION_LOGIN) {
 
-                $this->socialLogin('facebook', $redirect_to);
+                $this->socialLogin($provider, $redirect_to);
                 exit();
 
             }
 
             if ($_GET['action'] === self::ACTION_LOGOUT) {
 
-
-                $this->socialLogin('facebook', $redirect_to);
+                $this->socialLogout($provider, $redirect_to);
                 exit();
 
             }
@@ -455,6 +456,30 @@ class QikkerSocialLogin
         }
 
         return $wp_user;
+
+    }
+
+
+    public function socialLogout($provider, $redirect_to) {
+
+        if (!$redirect_to) {
+
+            $redirect_to = site_url();
+
+        }
+
+        $hybridAuthInstance = $this->getHybridAuthInstance();
+
+        if (is_user_logged_in() && $hybridAuthInstance->isConnectedWith($provider)) {
+
+            $hybridUserProfile = $hybridAuthInstance->authenticate($provider);
+
+            $hybridUserProfile->logout();
+
+        }
+
+        wp_safe_redirect($redirect_to);
+        exit();
 
     }
 
