@@ -31,6 +31,9 @@ class QikkerSocialLogin
 {
 
     const ACTION_LOGIN = 'qsl-do-social-login';
+
+    const ACTION_LOGOUT = 'qsl-do-social-logout';
+
     /**
      * The loader that's responsible for maintaining and registering all hooks that power
      * the plugin.
@@ -208,9 +211,18 @@ class QikkerSocialLogin
 
         if (isset($_GET['action'])) {
 
+            $redirect_to = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
+
             if ($_GET['action'] === self::ACTION_LOGIN) {
 
-                $redirect_to = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
+                $this->socialLogin('facebook', $redirect_to);
+                exit();
+
+            }
+
+            if ($_GET['action'] === self::ACTION_LOGOUT) {
+
+
                 $this->socialLogin('facebook', $redirect_to);
                 exit();
 
@@ -432,7 +444,7 @@ class QikkerSocialLogin
 
             $key = $this->usermetaIdentifierKey($provider);
 
-            $results = $wpdb->get_row("SELECT * FROM `{$wpdb->usermeta}` WHERE `{$wpdb->usermeta}`.`meta_key` = '$key'", ARRAY_A);
+            $results = $wpdb->get_row("SELECT * FROM `{$wpdb->usermeta}` WHERE `{$wpdb->usermeta}`.`meta_key` = '$key' AND `{$wpdb->usermeta}`.`meta_value` = '{$hybridUserProfile->identifier}'", ARRAY_A);
 
             if ($results && isset($results['user_id'])) {
 
@@ -449,6 +461,12 @@ class QikkerSocialLogin
     public function socialLogin($provider, $redirect_to = false)
     {
 
+        if (is_user_logged_in()) {
+
+            return;
+
+        }
+
         if (!$redirect_to) {
 
             $redirect_to = site_url();
@@ -457,14 +475,8 @@ class QikkerSocialLogin
 
         $hybridAuthInstance = $this->getHybridAuthInstance();
 
-        if (is_user_logged_in() && false) {
-
-            return;
-
-        }
-
         try {
-//            identifier
+
             /** @var $facebook Hybrid_Provider_Adapter */
             $providerAdapter = $hybridAuthInstance->authenticate($provider);
 
@@ -473,16 +485,6 @@ class QikkerSocialLogin
             $email = $hybridUserProfile->email;
 
             $wp_user = $this->findUser($hybridUserProfile, $provider);
-
-            if ($wp_user) {
-
-                global $wpdb;
-                $wpdb->delete( $wpdb->users, array( 'ID' => $wp_user->ID ) );
-                delete_user_meta($wp_user->ID, $this->usermetaIdentifierKey($provider));
-                clean_user_cache( $wp_user );
-                $wp_user = false;
-
-            }
 
             if (apply_filters('qikker_social_login_create_users', true) && !$wp_user) {
 
@@ -631,7 +633,8 @@ class QikkerSocialLogin
 
                                             ?>
                                                 <div class="destroy-sessions">
-                                                    <a href="?action=qsl_logout&provider=<?=$provider;?>" type="button" class="button button-secondary">Disconnect</a>
+                                                    <a href="?action=<?=QikkerSocialLogin::ACTION_LOGOUT;?>&provider=<?=$provider;?>"
+                                                       type="button" class="button button-secondary">Disconnect</a>
                                                 </div>
                                             <?php
 
