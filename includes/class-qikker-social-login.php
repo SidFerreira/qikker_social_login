@@ -30,6 +30,7 @@
 class QikkerSocialLogin
 {
 
+    const ACTION_LOGIN = 'qsl-do-social-login';
     /**
      * The loader that's responsible for maintaining and registering all hooks that power
      * the plugin.
@@ -73,12 +74,10 @@ class QikkerSocialLogin
         $this->plugin_name = 'qikker-social-login';
         $this->version = '0.1';
 
-//		self::$instance = $this;
-
-        $this->load_dependencies();
-        $this->set_locale();
-        $this->define_admin_hooks();
-        $this->define_public_hooks();
+        $this->loadDependencies();
+        $this->setLocale();
+        $this->defineAdminHooks();
+        $this->definePublicHooks();
 
     }
 
@@ -98,7 +97,7 @@ class QikkerSocialLogin
      * @since    1.0.0
      * @access   private
      */
-    private function load_dependencies()
+    private function loadDependencies()
     {
 
         /**
@@ -137,7 +136,7 @@ class QikkerSocialLogin
      * @since    1.0.0
      * @access   private
      */
-    private function set_locale()
+    private function setLocale()
     {
 
         $plugin_i18n = new QikkerSocialLogini18n();
@@ -153,7 +152,7 @@ class QikkerSocialLogin
      * @since    1.0.0
      * @access   private
      */
-    private function define_admin_hooks()
+    private function defineAdminHooks()
     {
 
         $plugin_admin = new QikkerSocialLoginAdmin($this->get_plugin_name(), $this->get_version());
@@ -170,13 +169,17 @@ class QikkerSocialLogin
      * @since    1.0.0
      * @access   private
      */
-    private function define_public_hooks()
+    private function definePublicHooks()
     {
-
+/*
         $plugin_public = new QikkerSocialLoginPublic($this->get_plugin_name(), $this->get_version());
 
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
+    */
+        $this->loader->add_action('init', $this, 'onWpInit', 10, 3);
+        $this->loader->add_action('show_user_profile', $this, 'userProfileInfo');
+        $this->loader->add_action('edit_user_profile', $this, 'userProfileInfo');
 
     }
 
@@ -188,36 +191,100 @@ class QikkerSocialLogin
     public function run()
     {
 
-        $this->loader->add_filter('check_password', $this, 'check_password', 10, 4);
+        $this->loader->add_filter('get_avatar_url', $this, 'getAvatarUrl', 10, 3);
+        $this->loader->add_filter('do_parse_request', $this, 'doParseRequest', 10, 3);
 
         $this->loader->run();
 
     }
 
-    public function check_password($check, $provider, $hash, $user_id) {
+    public function onWpInit() {
 
-        $providers = $this->getProviderConfig();
+        add_shortcode('qikker_social_login_form', array($this, 'shortcodeLogin'));
 
-        $user = get_user_by('id', $user_id);
+    }
 
-        //Add POST validation to invalid this
-        if ($user && isset($providers[$provider]) && !is_admin()) {
+    public function doParseRequest($valid, $wp, $extra_query_vars) {
 
-            $hybridAuthInstance = self::getInstance()->getHybridAuthInstance();
+        if (isset($_GET['action'])) {
 
-            if ($hybridAuthInstance->isConnectedWith($provider)) {
+            if ($_GET['action'] === self::ACTION_LOGIN) {
 
-                $providerAdapter = $hybridAuthInstance->authenticate($provider);
-
-                $hybridUserProfile = $providerAdapter->getUserProfile();
-
-                $check = $hybridUserProfile->email === $user->user_email;
+                $redirect_to = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
+                $this->socialLogin('facebook', $redirect_to);
+                exit();
 
             }
 
         }
 
-        return $check;
+        return $valid;
+
+    }
+
+    public function shortcodeLogin() {
+
+        $output = '';
+
+        if(!is_user_logged_in()) {
+
+            ob_start();
+
+            include_once dirname(__DIR__) . '/templates/login.php';
+
+            $output = ob_get_contents();
+
+            ob_end_clean();
+
+        } else {
+
+            $output = 'Already Logged In';
+
+        }
+
+        return $output;
+        
+    }
+
+    public function getAvatarUrl($url, $id_or_email, $args) {
+
+        if (is_object($id_or_email)) {
+
+            if ('WP_Comment' === get_class($id_or_email)) {
+
+                $id_or_email = $id_or_email->user_id;
+
+            }
+
+        }
+
+        if (!$id_or_email) {
+
+            return $url;
+
+        }
+
+        $user = get_user_by('id', $id_or_email);
+
+        if (!$user) {
+
+            $user = get_user_by('email', $id_or_email);
+
+        }
+
+        if ($user) {
+
+            $attachment_id = get_user_meta($user->ID, 'avatar_attachment_id', true);
+
+            if ($attachment_id && $attacument_url = wp_get_attachment_thumb_url($attachment_id)) {
+
+                $url = $attacument_url;
+
+            }
+
+        }
+
+        return $url;
 
     }
 
@@ -333,11 +400,62 @@ class QikkerSocialLogin
         return $this->hybridAuthInstance;
 
     }
+    public static function login($provider) {
 
-    public static function login($provider)
+        self::getInstance()->socialLogin($provider);
+
+    }
+
+    public function usermetaIdentifierKey($provider) {
+
+        return strtolower('qsl_' . $provider . '_identifier');
+
+    }
+
+    public function usermetaDateKey($provider) {
+
+        return strtolower('qsl_' . $provider . '_date');
+
+    }
+
+    /**
+     * @param $hybridUserProfile Hybrid_User_Profile
+     * @param $provider String
+     * @return WP_User|boolean
+     */
+    public function findUser($hybridUserProfile, $provider) {
+        $wp_user = get_user_by('email', $hybridUserProfile->email);
+
+        if (!$wp_user) {
+
+            global $wpdb;
+
+            $key = $this->usermetaIdentifierKey($provider);
+
+            $results = $wpdb->get_row("SELECT * FROM `{$wpdb->usermeta}` WHERE `{$wpdb->usermeta}`.`meta_key` = '$key'", ARRAY_A);
+
+            if ($results && isset($results['user_id'])) {
+
+                $wp_user = get_user_by('id', $results['user_id']);
+
+            }
+
+        }
+
+        return $wp_user;
+
+    }
+
+    public function socialLogin($provider, $redirect_to = false)
     {
 
-        $hybridAuthInstance = self::getInstance()->getHybridAuthInstance();
+        if (!$redirect_to) {
+
+            $redirect_to = site_url();
+
+        }
+
+        $hybridAuthInstance = $this->getHybridAuthInstance();
 
         if (is_user_logged_in() && false) {
 
@@ -346,22 +464,21 @@ class QikkerSocialLogin
         }
 
         try {
-
+//            identifier
             /** @var $facebook Hybrid_Provider_Adapter */
-            $providerAdapter = $hybridAuthInstance->authenticate("Facebook");
+            $providerAdapter = $hybridAuthInstance->authenticate($provider);
 
             $hybridUserProfile = $providerAdapter->getUserProfile();
 
             $email = $hybridUserProfile->email;
 
-            var_dump($hybridUserProfile);
-
-            $wp_user = get_user_by('email', $email);
+            $wp_user = $this->findUser($hybridUserProfile, $provider);
 
             if ($wp_user) {
 
                 global $wpdb;
                 $wpdb->delete( $wpdb->users, array( 'ID' => $wp_user->ID ) );
+                delete_user_meta($wp_user->ID, $this->usermetaIdentifierKey($provider));
                 clean_user_cache( $wp_user );
                 $wp_user = false;
 
@@ -379,21 +496,23 @@ class QikkerSocialLogin
 
                 } else {
 
-                    wp_set_current_user ( $user_id_or_error );
-                    wp_set_auth_cookie  ( $user_id_or_error );
+                    wp_set_auth_cookie( $user_id_or_error );
 
                     $userdata = get_userdata($user_id_or_error);
                     $userdata->user_nicename = $hybridUserProfile->displayName;
                     $userdata->display_name  = $hybridUserProfile->displayName;
-
-                    //Change to use wp_update_user
-                    update_user_meta($user_id_or_error, 'first_name',  $hybridUserProfile->firstName);
-                    update_user_meta($user_id_or_error, 'last_name',   $hybridUserProfile->lastName);
-                    update_user_meta($user_id_or_error, 'description', $hybridUserProfile->description);
+                    $userdata->first_name    = $hybridUserProfile->firstName;
+                    $userdata->last_name     = $hybridUserProfile->lastName;
+                    $userdata->description   = $hybridUserProfile->description;
 
                     wp_update_user($userdata);
 
+                    update_user_meta($user_id_or_error, $this->usermetaIdentifierKey($provider), $hybridUserProfile->identifier);
+                    update_user_meta($user_id_or_error, $this->usermetaDateKey($provider), time());
+
                     if ($hybridUserProfile->photoURL) {
+
+                        update_user_meta($user_id_or_error, 'social_photo_url', $hybridUserProfile->photoURL);
 
                         if (!function_exists('download_url')) {
 
@@ -403,7 +522,7 @@ class QikkerSocialLogin
 
                         }
 
-                        $downloaded_file = download_url($hybridUserProfile->photoURL);
+                        $downloaded_file = download_url($hybridUserProfile->photoURL, 10);
 
                         $downloaded_data = array(
                             'name'     => $user_id_or_error . '.jpg',
@@ -412,7 +531,13 @@ class QikkerSocialLogin
                             'type'     => 'image',
                         );
 
-                        $results = media_handle_sideload($downloaded_data, 0);
+                        $attachment_id = media_handle_sideload($downloaded_data, 0);
+
+                        if (!is_wp_error($attachment_id)) {
+
+                            update_user_meta($user_id_or_error, 'avatar_attachment_id', $attachment_id);
+
+                        }
 
                         if (file_exists($downloaded_file)) {
 
@@ -424,36 +549,14 @@ class QikkerSocialLogin
 
                 }
 
+            } else {
+
+                wp_set_auth_cookie( $wp_user->ID );
+
             }
-            /*
-                        // debug the user profile
-                        echo '<h2>Your Facebook profile</h2>';
-                        echo '<pre>';
-                        print_r( $facebook_user_profile );
-                        echo '</pre>';
 
-                        // The user's Facebook profile ID
-                        $profile_id = $facebook_user_profile->identifier;
+            wp_safe_redirect($redirect_to);
 
-                        // Example of using the facebook social api: Returns settings for the authenticating user
-                        // $facebook->api()->api == facebook's GET method
-                        // use https://developers.facebook.com/tools/explorer/286161255064795 to play around (forget the docs, they are a fucking pile of shit)
-                        $last_uploaded_picture = $facebook->api()->api( '/' . $profile_id . '/photos/uploaded?limit=1' );
-                        $individual_photo_id = $last_uploaded_picture['data'][0]['id'];
-                        $individual_photo_object = $facebook->api()->api( '/' . $individual_photo_id . '?fields=source');
-                        $individual_photo_url = $individual_photo_object['source'];
-
-                        echo '<h2>Array with data of your last uploaded photo</h2>';
-                        echo '<pre>';
-                        print_r($individual_photo_object);
-                        echo '</pre>';
-
-                        echo '<h2>Your last uploaded picture</h2>';
-                        echo '<img src="' . $individual_photo_url . '"/>';
-
-                        // disconnect the user ONLY form facebook
-                        // this will not disconnect the user from others providers if any used nor from your application
-            */
         } catch (Exception $e) {
 
             // Display the recived error,
@@ -498,6 +601,65 @@ class QikkerSocialLogin
             echo "<br /><br /><b>Original error message:</b> " . $e->getMessage();
 
         }
+
+    }
+
+    public function userProfileInfo($profileuser) {
+        ?>
+        <h2>Social Sessions</h2>
+        <table class="form-table">
+            <tbody>
+                <?php
+
+                    $qikkerSocialLogin = QikkerSocialLogin::getInstance();
+
+                    $providers = array_keys($qikkerSocialLogin->getProviderConfig());
+
+                    foreach($providers as $provider) {
+                        ?>
+
+                        <tr class="user-sessions-wrap">
+                            <th><?=$provider;?></th>
+                            <td aria-live="assertive">
+                                <?php
+
+                                    $social_login_date = get_user_meta($profileuser->ID, $qikkerSocialLogin->usermetaDateKey($provider), true);
+
+                                    if ($social_login_date) {
+
+                                        if ($profileuser->ID === get_current_user_id()){
+
+                                            ?>
+                                                <div class="destroy-sessions">
+                                                    <a href="?action=qsl_logout&provider=<?=$provider;?>" type="button" class="button button-secondary">Disconnect</a>
+                                                </div>
+                                            <?php
+
+                                        }
+
+                                        ?>
+                                            <p class="description">Connected since: <?= date('r', $social_login_date); ?></p>
+                                        <?php
+                                    } else {
+
+                                        ?>
+                                            <p class="description">Not connected.</p>
+                                        <?php
+
+                                    }
+                                ?>
+                            </td>
+                        </tr>
+
+                    <?php
+
+                    }
+
+                ?>
+
+            </tbody>
+        </table>
+<?php
 
     }
 
