@@ -22,7 +22,7 @@
  */
 class QikkerSocialLoginPublic
 {
-    
+
     /**
      * The ID of this plugin.
      *
@@ -31,7 +31,7 @@ class QikkerSocialLoginPublic
      * @var      string $plugin_name The ID of this plugin.
      */
     private $plugin_name;
-    
+
     /**
      * The version of this plugin.
      *
@@ -40,7 +40,7 @@ class QikkerSocialLoginPublic
      * @var      string $version The current version of this plugin.
      */
     private $version;
-    
+
     /**
      * Initialize the class and set its properties.
      *
@@ -50,12 +50,12 @@ class QikkerSocialLoginPublic
      */
     public function __construct($plugin_name, $version)
     {
-        
+
         $this->plugin_name = $plugin_name;
         $this->version = $version;
-        
+
     }
-    
+
     /**
      * Register the stylesheets for the public-facing side of the site.
      *
@@ -63,7 +63,7 @@ class QikkerSocialLoginPublic
      */
     public function enqueueStyles()
     {
-        
+
         /**
          * This function is provided for demonstration purposes only.
          *
@@ -75,7 +75,7 @@ class QikkerSocialLoginPublic
          * between the defined hooks and the functions defined in this
          * class.
          */
-        
+
         if (!add_filter($this->plugin_name . '_should_enqueue_styles', true)) {
 
             return;
@@ -95,9 +95,9 @@ class QikkerSocialLoginPublic
         wp_enqueue_style($this->plugin_name, QikkerSocialLogin::pluginDirUrl() . QikkerSocialLoginStyles::getPath(),
             array(), $this->version, 'all');
 
-        
+
     }
-    
+
     /**
      * Register the JavaScript for the public-facing side of the site.
      *
@@ -105,7 +105,7 @@ class QikkerSocialLoginPublic
      */
     public function enqueueScripts()
     {
-        
+
         /**
          * This function is provided for demonstration purposes only.
          *
@@ -128,10 +128,10 @@ class QikkerSocialLoginPublic
 
             require_once(QikkerSocialLogin::pluginDirPath() . '/includes/assets/assets-js_vendor.php' );
             require_once(QikkerSocialLogin::pluginDirPath() . '/includes/assets/assets-js.php' );
-/*
-            wp_enqueue_style($this->plugin_name . '_vendors',
-                QikkerSocialLogin::pluginDirUrl() . QikkerSocialLoginScriptsVendor::getPath(),
-                array(), $this->version, 'all');*/
+            /*
+                        wp_enqueue_style($this->plugin_name . '_vendors',
+                            QikkerSocialLogin::pluginDirUrl() . QikkerSocialLoginScriptsVendor::getPath(),
+                            array(), $this->version, 'all');*/
 
         } else {
 
@@ -142,7 +142,7 @@ class QikkerSocialLoginPublic
 
         wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/plugin-name-public.js', array('jquery'),
             $this->version, false);
-        
+
     }
-    
+
 }

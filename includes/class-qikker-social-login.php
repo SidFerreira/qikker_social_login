@@ -25,7 +25,7 @@
  * @since      1.0.0
  * @package    QikkerSocialLogin
  * @subpackage QikkerSocialLogin/includes
- * @author     Your Name <email@example.com>
+ * @author     Sidney Ferreira <sid@qikkeronline.nl>
  */
 class QikkerSocialLogin
 {
@@ -33,6 +33,10 @@ class QikkerSocialLogin
     const ACTION_LOGIN = 'qsl-do-social-login';
 
     const ACTION_LOGOUT = 'qsl-do-social-logout';
+
+    const PLUGIN_NAME   = 'qikker-social-login';
+
+    const USER_AVATAR   = 'user_avatar';
 
     /**
      * The loader that's responsible for maintaining and registering all hooks that power
@@ -74,13 +78,14 @@ class QikkerSocialLogin
     public function __construct()
     {
 
-        $this->plugin_name = 'qikker-social-login';
-        $this->version = '0.1';
+        $this->plugin_name = self::PLUGIN_NAME; // @TODO mode to constant
+        $this->version = '0.2';
 
         $this->loadDependencies();
         $this->setLocale();
         $this->defineAdminHooks();
         $this->definePublicHooks();
+        $this->defineFilters();
 
     }
 
@@ -124,7 +129,7 @@ class QikkerSocialLogin
          * The class responsible for defining all actions that occur in the public-facing
          * side of the site.
          */
-        require_once plugin_dir_path(dirname(__FILE__)) . 'public/class-qikker-social-login-public.php';
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-qikker-social-login-public.php';
 
         $this->loader = new QikkerSocialLoginLoader();
 
@@ -174,15 +179,30 @@ class QikkerSocialLogin
      */
     private function definePublicHooks()
     {
-/*
+
         $plugin_public = new QikkerSocialLoginPublic($this->get_plugin_name(), $this->get_version());
 
-        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
-        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
-    */
+        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueueStyles');
+        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueueScripts');
+
         $this->loader->add_action('init', $this, 'onWpInit', 10, 3);
         $this->loader->add_action('show_user_profile', $this, 'userProfileInfo');
         $this->loader->add_action('edit_user_profile', $this, 'userProfileInfo');
+
+    }
+
+    /**
+     * Register all of the filters
+     * of the plugin.
+     *
+     * @since    1.0.0
+     * @access   private
+     */
+    private function defineFilters()
+    {
+
+        $this->loader->add_filter('get_avatar_url', $this, 'getAvatarUrl', 10, 3);
+        $this->loader->add_filter('do_parse_request', $this, 'doParseRequest', 10, 3);
 
     }
 
@@ -194,8 +214,6 @@ class QikkerSocialLogin
     public function run()
     {
 
-        $this->loader->add_filter('get_avatar_url', $this, 'getAvatarUrl', 10, 3);
-        $this->loader->add_filter('do_parse_request', $this, 'doParseRequest', 10, 3);
 
         $this->loader->run();
 
@@ -214,6 +232,12 @@ class QikkerSocialLogin
             $provider = $_GET['provider'];
 
             $redirect_to = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
+            var_dump(home_url(add_query_arg(array(),$wp->request)));
+            var_dump($redirect_to);
+            die;
+            //$current_url = home_url(add_query_arg(array(),$wp->request));
+
+//            DO IT
 
             if ($_GET['action'] === self::ACTION_LOGIN) {
 
@@ -224,7 +248,7 @@ class QikkerSocialLogin
 
             if ($_GET['action'] === self::ACTION_LOGOUT) {
 
-                $this->socialLogout($provider, $redirect_to);
+                $this->socialDisconnect($provider, $redirect_to);
                 exit();
 
             }
@@ -241,9 +265,10 @@ class QikkerSocialLogin
 
         if(!is_user_logged_in()) {
 
+            
             ob_start();
 
-            include_once dirname(__DIR__) . '/templates/login.php';
+            include $this->locateTemplate('login.php');
 
             $output = ob_get_contents();
 
@@ -251,7 +276,7 @@ class QikkerSocialLogin
 
         } else {
 
-            $output = 'Already Logged In';
+            $output = 'Logged In Successfully';
 
         }
 
@@ -437,19 +462,20 @@ class QikkerSocialLogin
      * @return WP_User|boolean
      */
     public function findUser($hybridUserProfile, $provider) {
+
         $wp_user = get_user_by('email', $hybridUserProfile->email);
 
         if (!$wp_user) {
 
-            global $wpdb;
+            $results = get_users(array(
+                'meta_key'   => $this->usermetaIdentifierKey($provider),
+                'meta_value' => $hybridUserProfile->identifier,
+                'compare'    => '='
+            ));
 
-            $key = $this->usermetaIdentifierKey($provider);
+            if ($results && count($results)) {
 
-            $results = $wpdb->get_row("SELECT * FROM `{$wpdb->usermeta}` WHERE `{$wpdb->usermeta}`.`meta_key` = '$key' AND `{$wpdb->usermeta}`.`meta_value` = '{$hybridUserProfile->identifier}'", ARRAY_A);
-
-            if ($results && isset($results['user_id'])) {
-
-                $wp_user = get_user_by('id', $results['user_id']);
+                $wp_user = $results[0];
 
             }
 
@@ -460,26 +486,30 @@ class QikkerSocialLogin
     }
 
 
-    public function socialLogout($provider, $redirect_to) {
-
-        if (!$redirect_to) {
-
-            $redirect_to = site_url();
-
-        }
+    public function socialDisconnect($provider, $redirect_to = false) {
 
         $hybridAuthInstance = $this->getHybridAuthInstance();
 
         if (is_user_logged_in() && $hybridAuthInstance->isConnectedWith($provider)) {
 
-            $hybridUserProfile = $hybridAuthInstance->authenticate($provider);
-
+            $hybridUserProfile = $hybridAuthInstance->getAdapter($provider);
             $hybridUserProfile->logout();
 
         }
 
-        wp_safe_redirect($redirect_to);
-        exit();
+        if ($redirect_to) {
+
+            if ($redirect_to === true) {
+
+                //get redirect from (Gerben Snippet)
+
+            }
+
+
+            wp_safe_redirect($redirect_to);
+            exit();
+
+        }
 
     }
 
@@ -494,6 +524,7 @@ class QikkerSocialLogin
 
         if (!$redirect_to) {
 
+            //get redirect from (Gerben Snippet)
             $redirect_to = site_url();
 
         }
@@ -519,60 +550,17 @@ class QikkerSocialLogin
                 if (is_wp_error($user_id_or_error)) {
 
                     //Send an e-mail to the blog admin / add filter
-                    do_action('qikker_social_login_authentication_error', $user_id_or_error);
+                    do_action('qikker_social_login_user_register_error', $user_id_or_error);
 
                 } else {
 
                     wp_set_auth_cookie( $user_id_or_error );
 
-                    $userdata = get_userdata($user_id_or_error);
-                    $userdata->user_nicename = $hybridUserProfile->displayName;
-                    $userdata->display_name  = $hybridUserProfile->displayName;
-                    $userdata->first_name    = $hybridUserProfile->firstName;
-                    $userdata->last_name     = $hybridUserProfile->lastName;
-                    $userdata->description   = $hybridUserProfile->description;
-
-                    wp_update_user($userdata);
-
                     update_user_meta($user_id_or_error, $this->usermetaIdentifierKey($provider), $hybridUserProfile->identifier);
                     update_user_meta($user_id_or_error, $this->usermetaDateKey($provider), time());
 
-                    if ($hybridUserProfile->photoURL) {
-
-                        update_user_meta($user_id_or_error, 'social_photo_url', $hybridUserProfile->photoURL);
-
-                        if (!function_exists('download_url')) {
-
-                            require_once ABSPATH . '/wp-admin/includes/file.php';
-                            require_once ABSPATH . '/wp-admin/includes/media.php';
-                            require_once ABSPATH . '/wp-admin/includes/image.php';
-
-                        }
-
-                        $downloaded_file = download_url($hybridUserProfile->photoURL, 10);
-
-                        $downloaded_data = array(
-                            'name'     => $user_id_or_error . '.jpg',
-                            'tmp_name' => $downloaded_file,
-                            'ext'      => 'jpg',
-                            'type'     => 'image',
-                        );
-
-                        $attachment_id = media_handle_sideload($downloaded_data, 0);
-
-                        if (!is_wp_error($attachment_id)) {
-
-                            update_user_meta($user_id_or_error, 'avatar_attachment_id', $attachment_id);
-
-                        }
-
-                        if (file_exists($downloaded_file)) {
-
-                            unlink($downloaded_file);
-
-                        }
-
-                    }
+                    $this->setupUserData($user_id_or_error, $hybridUserProfile);
+                    $this->setupUserAvatar($user_id_or_error, $hybridUserProfile);
 
                 }
 
@@ -628,6 +616,69 @@ class QikkerSocialLogin
             echo "<br /><br /><b>Original error message:</b> " . $e->getMessage();
 
         }
+
+    }
+
+    public function setupUserData($user_id, $hybridUserProfile) {
+
+        $userdata = get_userdata($user_id);
+
+        $userdata->user_nicename = $hybridUserProfile->displayName;
+        $userdata->display_name  = $hybridUserProfile->displayName;
+        $userdata->first_name    = $hybridUserProfile->firstName;
+        $userdata->last_name     = $hybridUserProfile->lastName;
+        $userdata->description   = $hybridUserProfile->description;
+
+        wp_update_user($userdata);
+
+    }
+
+    public function setupUserAvatar($user_id, $hybridUserProfile) {
+
+        $current_social_photo_url = get_user_meta($user_id, 'social_photo_url', true);
+
+        if ($hybridUserProfile->photoURL && $hybridUserProfile != $current_social_photo_url) {
+
+            update_user_meta($user_id, 'social_photo_url', $hybridUserProfile->photoURL);
+
+            if (!function_exists('download_url')) {
+
+                require_once ABSPATH . '/wp-admin/includes/file.php';
+                require_once ABSPATH . '/wp-admin/includes/media.php';
+                require_once ABSPATH . '/wp-admin/includes/image.php';
+
+            }
+
+            $downloaded_file = download_url($hybridUserProfile->photoURL, 10);
+
+            $downloaded_data = array(
+                'name'     => $user_id . '.jpg',
+                'tmp_name' => $downloaded_file,
+                'ext'      => 'jpg',
+                'type'     => 'image',
+            );
+
+            $attachment_id = media_handle_sideload($downloaded_data, 0);
+
+            if (!is_wp_error($attachment_id)) {
+
+                update_user_meta($user_id, self::USER_AVATAR, $attachment_id);
+
+            }
+
+            if (file_exists($downloaded_file)) {
+
+                unlink($downloaded_file);
+
+            }
+
+        }
+
+    }
+
+    public static function getLoginHref($provider) {
+
+        return site_url() . '?action=' . QikkerSocialLogin::ACTION_LOGIN . '&provider=' . $provider;
 
     }
 
@@ -688,6 +739,33 @@ class QikkerSocialLogin
             </tbody>
         </table>
 <?php
+
+    }
+
+    static function pluginDirUrl() {
+
+        return plugin_dir_url(__DIR__);
+
+    }
+
+    static function pluginDirPath() {
+
+        return dirname(__DIR__);
+
+    }
+
+    public function locateTemplate($template_name) {
+
+        $template = locate_template( trailingslashit( $this->plugin_name ) . $template_name );
+
+
+        if (!$template) {
+
+            $template = $this->pluginDirPath() . '/templates/' . $template_name;
+
+        }
+
+        return $template;
 
     }
 

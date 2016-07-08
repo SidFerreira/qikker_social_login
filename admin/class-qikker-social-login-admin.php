@@ -18,7 +18,7 @@
  *
  * @package    QikkerSocialLogin
  * @subpackage QikkerSocialLogin/admin
- * @author     Your Name <email@example.com>
+ * @author     Sid Ferreira <sid@qikkeronline.nl>
  */
 class QikkerSocialLoginAdmin {
 

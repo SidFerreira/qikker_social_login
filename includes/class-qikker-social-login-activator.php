@@ -18,19 +18,21 @@
  * @since      1.0.0
  * @package    QikkerSocialLogin
  * @subpackage QikkerSocialLogin/includes
- * @author     Your Name <email@example.com>
+ * @author     Sid Ferreira <sid@qikkeronline.nl>
  */
-class QikkerSocialLoginActivator {
+class QikkerSocialLoginActivator
+{
 
-	/**
-	 * Short Description. (use period)
-	 *
-	 * Long Description.
-	 *
-	 * @since    1.0.0
-	 */
-	public static function activate() {
+    /**
+     * Short Description. (use period)
+     *
+     * Long Description.
+     *
+     * @since    1.0.0
+     */
+    public static function activate()
+    {
 
-	}
+    }
 
 }

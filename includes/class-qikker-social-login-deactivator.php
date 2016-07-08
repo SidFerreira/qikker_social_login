@@ -18,19 +18,21 @@
  * @since      1.0.0
  * @package    QikkerSocialLogin
  * @subpackage QikkerSocialLogin/includes
- * @author     Your Name <email@example.com>
+ * @author     Sid Ferreira <sid@qikkeronline.nl>
  */
-class QikkerSocialLoginDeactivator {
+class QikkerSocialLoginDeactivator
+{
 
-	/**
-	 * Short Description. (use period)
-	 *
-	 * Long Description.
-	 *
-	 * @since    1.0.0
-	 */
-	public static function deactivate() {
+    /**
+     * Short Description. (use period)
+     *
+     * Long Description.
+     *
+     * @since    1.0.0
+     */
+    public static function deactivate()
+    {
 
-	}
+    }
 
 }

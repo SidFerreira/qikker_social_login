@@ -1,15 +1,14 @@
 <?php
-	
-	function qikker_add_styles() {
 
-		global $localurl;
+// If WordPress has loaded then we load the assets for the WordPress implementation of Gromit
+class QikkerSocialLoginStyles
+{
 
-		$cssurl = $localurl . '/public/css/styles-@@replace_css.min.css';
+    static function getPath()
+    {
 
-		// Load the CSS
-		wp_register_style('qikker_css', $cssurl, null, null);
-		wp_enqueue_style('qikker_css');
+        return '/public/css/styles-@@replace_css.min.css';
 
-	}
+    }
 
-	add_action( 'wp_enqueue_scripts', 'qikker_add_styles' );
+}
