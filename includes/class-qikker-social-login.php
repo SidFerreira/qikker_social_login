@@ -374,15 +374,33 @@ class QikkerSocialLogin
     private function getProviderConfig()
     {
 
-        $base_config = array(
-            "Facebook" => array(
-                "enabled" => true,
-                "keys" => array("id" => "288424601505127", "secret" => "4a0bb2de87d206ac55d4cc84ada7f07b"),
-                "trustForwarded" => false,
-                "scope" => "email, user_about_me, user_birthday, user_hometown, user_website, user_friends, user_photos",
-//				"display" => "popup"
-            )
-        );
+        $base_config = array();
+
+        if (strpos(site_url(), 'sociallogin.qikkerinternal.nl')) {
+
+            $base_config = array(
+                "Facebook" => array(
+                    "enabled" => true,
+                    "keys" => array("id" => "289669238047330", "secret" => "0d8414a87a389b04231ff89f8cf81fec"),
+                    "trustForwarded" => false,
+                    "scope" => "email, user_about_me, user_birthday, user_hometown, user_website, user_friends, user_photos",
+                    "display" => "popup"
+                )
+            );
+
+        } else if (strpos(site_url(), 'sll.qikkeroffline.hl')) {
+
+            $base_config = array(
+                "Facebook" => array(
+                    "enabled" => true,
+                    "keys" => array("id" => "288424601505127", "secret" => "4a0bb2de87d206ac55d4cc84ada7f07b"),
+                    "trustForwarded" => false,
+                    "scope" => "email, user_about_me, user_birthday, user_hometown, user_website, user_friends, user_photos",
+                    "display" => "popup"
+                )
+            );
+
+        }
 
         return apply_filters('qikker_social_login_config_provider', $base_config);
 
