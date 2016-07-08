@@ -82,7 +82,7 @@ class QikkerSocialLoginPublic
 
         }
 
-        if (getenv('APP_ENV') == 'dev') {
+        if (getenv('APP_ENV') == 'dev' || true) {
 
             require_once(QikkerSocialLogin::pluginDirPath() . '/includes/assets/assets-css_development.php' );
 
@@ -94,7 +94,6 @@ class QikkerSocialLoginPublic
 
         wp_enqueue_style($this->plugin_name, QikkerSocialLogin::pluginDirUrl() . QikkerSocialLoginStyles::getPath(),
             array(), $this->version, 'all');
-
 
     }
 
@@ -124,7 +123,7 @@ class QikkerSocialLoginPublic
 
         }
 
-        if (getenv('APP_ENV') == 'dev') {
+        if (getenv('APP_ENV') == 'dev' || true) {
 
             require_once(QikkerSocialLogin::pluginDirPath() . '/includes/assets/assets-js_vendor.php' );
             require_once(QikkerSocialLogin::pluginDirPath() . '/includes/assets/assets-js.php' );
