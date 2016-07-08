@@ -128,10 +128,10 @@ class QikkerSocialLoginPublic
 
             require_once(QikkerSocialLogin::pluginDirPath() . '/includes/assets/assets-js_vendor.php' );
             require_once(QikkerSocialLogin::pluginDirPath() . '/includes/assets/assets-js.php' );
-            /*
-                        wp_enqueue_style($this->plugin_name . '_vendors',
-                            QikkerSocialLogin::pluginDirUrl() . QikkerSocialLoginScriptsVendor::getPath(),
-                            array(), $this->version, 'all');*/
+
+            wp_enqueue_script($this->plugin_name . '_vendors',
+                QikkerSocialLogin::pluginDirUrl() . QikkerSocialLoginVendorScripts::getPath(),
+                array(), $this->version, 'all');
 
         } else {
 
@@ -140,8 +140,9 @@ class QikkerSocialLoginPublic
 
         }
 
-        wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/plugin-name-public.js', array('jquery'),
-            $this->version, false);
+        wp_enqueue_script($this->plugin_name,
+            QikkerSocialLogin::pluginDirUrl() . QikkerSocialLoginScripts::getPath(),
+            array(), $this->version, 'all');
 
     }
 

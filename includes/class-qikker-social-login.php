@@ -750,7 +750,7 @@ class QikkerSocialLogin
 
     static function pluginDirPath() {
 
-        return dirname(__DIR__);
+        return trailingslashit( dirname(__DIR__) );
 
     }
 
@@ -761,7 +761,7 @@ class QikkerSocialLogin
 
         if (!$template) {
 
-            $template = $this->pluginDirPath() . '/templates/' . $template_name;
+            $template = $this->pluginDirPath() . 'templates/' . $template_name;
 
         }
 

@@ -6,7 +6,7 @@
         static function getPath()
         {
 
-            return '/public/js/scripts-@@replace_js.min.js';
+            return 'public/js/scripts-@@replace_js.min.js';
 
         }
 
