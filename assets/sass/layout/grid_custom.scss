@@ -1,0 +1,53 @@
+// Extend the grid in this file. Sometimes useful for testing without affecting the grid itself, or to generalise vertical gutters as well (bootstrap only creates horizontal gutters)
+.container--test {
+
+    .row > div {
+
+        min-height: 100px;
+
+        > div {
+
+            //min-height: 100px;
+            padding: $gutter;
+
+            @include mediaquery('xs'){
+
+                background-color: blue;
+
+            }
+
+            @include mediaquery('sm'){
+
+                background-color: orange;
+
+            }
+
+            @include mediaquery('md'){
+
+                background-color: green;
+
+            }
+
+            @include mediaquery('lg'){
+
+                background-color: purple;
+
+            }
+
+        }
+
+    }
+
+    .row {
+
+        margin-top: $gutter;
+
+        &:last-child {
+
+            margin-bottom: $gutter;
+
+        }
+
+    }
+
+}

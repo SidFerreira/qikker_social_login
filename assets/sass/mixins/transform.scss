@@ -1,0 +1,19 @@
+@mixin transform($deg){
+
+    -webkit-transform: $deg;
+    -moz-transform: $deg;
+    -ms-transform: $deg;
+    -o-transform: $deg;
+    transform: $deg;
+
+}
+
+@mixin transform-origin($deg){
+
+    -webkit-transform-origin: $deg;
+    -moz-transform-origin: $deg;
+    -ms-transform-origin: $deg;
+    -o-transform-origin: $deg;
+    transform-origin: $deg;
+
+}

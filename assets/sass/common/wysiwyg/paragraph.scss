@@ -1,0 +1,16 @@
+p {
+
+    @extend .paragraph;
+    @extend .paragraph--regular;
+
+    // Intro text styles
+    &.intro {
+
+        @extend .weight--bold;
+        @extend .size--medium;
+
+        color: color('content', 'intro');
+
+    }
+
+}

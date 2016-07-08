@@ -1,0 +1,27 @@
+// A mixin to use in stead of your normal &:hover {} code, to ensure we don't have hover states on devices with touch events in stead of click events
+// Drop in the hover media query at a later stage: http://www.w3.org/TR/mediaqueries-4/#hover
+@mixin hover() {
+
+    //html.no-touchevents &:hover, html.touchevents &:active { // Same effect, but only after a user has pressed on a touch device
+    html.no-touchevents &:hover {
+
+        @content;
+
+    }
+
+}
+
+@mixin hover_child($hovered, $target) {
+
+    @at-root {
+
+        //html.no-touchevents &#{$hovered}:hover &#{$target}, html.touchevents &#{$hovered}:active &#{$target} {
+        html.no-touchevents &#{$hovered}:hover &#{$target} {
+            // Same effect, but only after a user has pressed on a touch device
+            @content;
+
+        }
+
+    }
+
+}

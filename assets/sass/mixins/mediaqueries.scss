@@ -1,0 +1,116 @@
+// Media Query Mixin for SASS. 
+// Firstly; yes, technically these are not variables, but as the dimensions inside the @media definitions are project-dependant (read: variable), we still include then in the variables folder.
+// Usage: @include mediaquery('desktop'){ // your css here }
+// Important note: these mediaqueries are also used in the bootstrap grid (found in vendor/grid_bootstrap.scss), to ensure that the major mediaqueries are equal in both the grid and our own code
+
+@mixin mediaquery($breakpoint) {
+
+	@if $breakpoint == lg {
+
+		@media (min-width: $lg_mediaquery_width) {
+
+			@content;
+
+		}
+
+	}
+
+	@else if $breakpoint == from_md {
+
+		@media (min-width: $md_mediaquery_width) {
+
+			@content;
+
+		}
+
+	}
+
+	@else if $breakpoint == md {
+
+		@media (min-width: $md_mediaquery_width) and (max-width: $lg_mediaquery_width - 1) {
+
+			@content;
+
+		}
+
+	}
+
+	@else if $breakpoint == to_md {
+
+		@media (max-width: $lg_mediaquery_width - 1) {
+
+			@content;
+
+		}
+
+	}
+
+	@else if $breakpoint == from_sm {
+
+		@media (min-width: $sm_mediaquery_width) {
+
+			@content;
+
+		}
+
+	}
+
+	@else if $breakpoint == sm {
+
+		@media (min-width: $sm_mediaquery_width) and (max-width: $md_mediaquery_width - 1) {
+
+			@content;
+
+		}
+
+	}
+
+	@else if $breakpoint == to_sm {
+
+		@media (max-width: $md_mediaquery_width - 1) {
+
+			@content;
+
+		}
+
+	}
+
+	@else if $breakpoint == xs {
+
+		@media (max-width: $sm_mediaquery_width - 1) {
+
+			@content;
+
+		}
+
+	}
+
+		// Retina screens
+	@else if $breakpoint == retina {
+
+		@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+
+			@content;
+
+		}
+
+	}
+
+		// Ultra high DPI screens (e.g. iphone 6+)
+	@else if $breakpoint == uretina {
+
+		@media (-webkit-min-device-pixel-ratio: 3), (min-resolution: 350dpi) {
+
+			@content;
+
+		}
+
+	}
+
+	@else {
+
+		@error "Mediaquery mixin: Supplied breakpoint '#{$breakpoint}' is not defined, please check your spelling or add the breakpoint to the mixin.";
+
+	}
+
+}

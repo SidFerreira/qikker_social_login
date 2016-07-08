@@ -1,0 +1,34 @@
+@import
+
+    "mixins/_mixins",
+    "variables/_variables";
+
+html, body {
+
+    background-color: color('wp-login', 'base');
+
+}
+
+#login h1 a {
+
+    background-image: url(../img/logo.svg) !important;
+    width: 226px !important;
+    height: 46px !important;
+    background-size: cover !important;
+    margin-bottom: 30px;
+    margin-left: auto;
+    margin-right: auto;
+
+}
+
+#nav a {
+
+    color: color('wp-login', 'base') !important;
+
+}
+
+#backtoblog a {
+
+    color: color('wp-login', 'links') !important;
+
+}

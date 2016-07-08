@@ -1,0 +1,524 @@
+.gform_wrapper:not(.disable-custom) {
+
+    max-width: 100% !important;
+    margin: 0px !important;
+    margin-top: $form-spacing !important;
+    margin-bottom: $form-spacing !important;
+
+    // The second selector is needed to override GF defaults
+    input[type=text]:not([name=recaptcha_response_field]), form .gform_body .ginput_complex input[type=text]{
+
+        @extend .input;
+        @extend .input--text !optional;
+
+        padding-left: $form_el-padding !important;
+        padding-right: $form_el-padding !important;
+        width: 100% !important;
+        text-indent: 0px !important;
+
+    }
+
+    input[type=email]{
+
+        @extend .input;
+        @extend .input--text !optional;
+
+        width: 100% !important;
+
+    }
+
+    select {
+
+        @extend .input;
+        @extend .input--select;
+
+        // Override default GF styles
+        margin-left: 0px !important;
+        width: 100% !important;
+
+    }
+
+        &.gf_browser_chrome select {
+
+            width: 100% !important;
+
+        }
+
+    input[type=checkbox]{
+
+        @extend .input--checkbox !optional;
+
+        margin-top: $checkbox-top-offset !important;
+        margin-right: $form-spacing-small;
+
+    }
+
+    input[type=radio]{
+
+        @extend .input--radio !optional;
+
+        margin-top: $radio-top-offset !important;
+        margin-right: $form-spacing-small;
+
+    }
+
+    textarea {
+
+        @extend .input;
+        @extend .input--textarea !optional;
+
+        width: 100% !important;
+        padding-left: $form_el-padding !important;
+        padding-right: $form_el-padding !important;
+
+    }
+
+    label {
+
+        @extend .input--label;
+
+        // Override default GF styles
+        margin: 0px !important;
+
+        & + div.ginput_container {
+
+            margin-top: 0px !important;
+
+        }
+
+    }
+
+    h2.gsection_title, label {
+
+        font-size: $form_label-fontsize-regular !important;
+        line-height: $form_label-lineheight-regular !important;
+
+    }
+
+    .ginput_complex label, .gfield_radio label, .gfield_checkbox label, .gfield_time_hour i, .gfield_time_hour label, .gfield_time_minute label {
+
+        font-size: $form_label-fontsize-small !important;
+        line-height: $form_label-lineheight-small !important;
+
+    }
+
+    .ginput_container_time {
+
+        margin-right: $small_gutter;
+
+    }
+
+    .gfield_time_hour i {
+
+        margin-right: -$small_gutter;
+
+    }
+
+    .gf_step, .gf_step_number, .validation_error, .validation_message {
+
+        font-size: $form_label-fontsize-small !important;
+        line-height: $form_label-lineheight-small !important;
+
+    }
+
+    .gfield_label {
+
+        margin-bottom: $form-spacing-tiny !important;
+
+    }
+
+    .ginput_complex label, .gfield_description {
+
+        margin-top: $form-spacing-tiny !important;
+
+    }
+
+    ul li.gfield + .gfield {
+
+        margin-top: $form-spacing-small !important;
+
+    }
+
+    .gfield_error + .gfield_error {
+
+        margin-top: $form-spacing-small !important;
+
+    }
+
+    ul li.gfield + .gfield.gsection {
+
+        margin-top: $form-spacing !important;
+
+    }
+
+    .gform_title {
+
+        margin: 0px !important;
+        margin-bottom: $form-spacing-small !important;
+
+    }
+
+    .gform_heading {
+
+        margin-bottom: $form-spacing !important;
+
+    }
+
+    .gsection {
+
+        margin: 0px !important;
+        margin-bottom: $form-spacing-small !important;
+        padding: 0px !important;
+        padding-bottom: $form-spacing-small !important;
+
+    }
+
+    .gform_body h2.gsection_title + .gsection_description {
+
+        margin-top: $form-spacing-small !important;
+
+    }
+
+    .gfield_description {
+
+        padding: 0px !important;
+        width: 100% !important;
+
+    }
+
+    .gsection_description {
+
+        // Override default GF styles
+        padding: 0px !important;
+        width: 100% !important;
+
+    }
+
+    .ginput_container span:not(#recaptcha_privacy) {
+
+        // Override default GF styles
+        padding-right: 0px !important;
+        margin-left: 0px !important;
+
+        &.ginput_left, &.ginput_right {
+
+            // Override default GF styles
+            width: 50% !important;
+
+        }
+
+        &.ginput_right, &.name_last {
+
+            // Override default GF styles
+            padding-left: $form-spacing-tiny !important;
+
+        }
+
+        &.ginput_left, &.name_first {
+
+            // Override default GF styles
+            float: left;
+            padding-right: $form-spacing-tiny !important;
+            clear: left;
+
+        }
+
+    }
+
+    .address_zip, .address_country {
+
+        margin-top: $form-spacing-small;
+
+    }
+
+    .ginput_right.address_zip {
+
+        margin-top: 0px !important;
+
+    }
+
+    div.ginput_container_name span {
+
+        margin-right: 0px !important; // no idea why this is needed but it fixes alignment up
+
+    }
+
+    .address_line_1, .address_line_2 {
+
+        margin-bottom: $form-spacing-small !important;
+        display: block !important;
+
+    }
+
+    .gfield_captcha_input_container {
+
+        padding-top: 0px !important;
+
+    }
+
+    .gform_body .gfield_captcha_container img.gfield_captcha {
+
+        margin-bottom: $form-spacing-small !important;
+        border: $field-border-width solid $field-border-color !important;
+        @include border-radius($form-border-radius);
+
+    }
+
+    .gfield_checkbox li, .gfield_radio li {
+
+        margin: 0px !important;
+
+    }
+
+    .gform_footer {
+
+        padding: 0px !important;
+        margin: 0px !important;
+        margin-top: $form-spacing !important;
+
+    }
+
+    .gf_page_steps {
+
+        width: 100% !important;
+        padding: 0px !important;
+        margin: 0px !important;
+        margin-bottom: $form-spacing !important;
+
+    }
+
+    .gf_step {
+
+        margin: 0px !important;
+        margin-bottom: $form-spacing-small !important;
+
+        & + .gf_step {
+
+            margin-left: $form-spacing-small !important;
+
+        }
+
+    }
+
+    .gform_page_footer {
+
+        width: 100% !important;
+        padding: 0px !important;
+        margin: 0px !important;
+        margin-top: $form-spacing !important;
+        padding-top: $form-spacing !important;
+
+    }
+
+    .gform_body li.gf_list_inline ul.gfield_checkbox li, .gform_body li.gf_list_inline ul.gfield_radio li {
+
+        width: 100% !important;
+
+    }
+
+    .validation_error {
+
+        @extend .validation !optional;
+        @extend .validation--main !optional;
+
+        width: 100% !important;
+        padding: $form-spacing-small !important;
+        margin: 0px !important;
+        margin-bottom: $form-spacing !important;
+
+    }
+
+    .gform_body li.gfield.gfield_error.gfield_contains_required {
+
+        margin-top: 0px !important;
+        margin-bottom: 0px !important;
+        padding: $form-spacing-small !important;
+
+        & + .gfield_error {
+
+            margin-top: $form-spacing-small !important;
+
+        }
+
+    }
+
+    .gfield_error {
+
+        width: 100% !important;
+        padding: $form-spacing-small !important;
+        @include border-radius($form-border-radius);
+
+    }
+
+    .gform_body .gfield + .gfield.gfield_error.gfield_contains_required {
+
+        margin-top: $form-spacing-small !important;
+
+    }
+
+    li.gfield.gfield_error.gfield_contains_required div.ginput_container, li.gfield_html {
+
+        max-width: 100% !important;
+    }
+
+    li.gfield.gfield_error.gfield_contains_required div.gfield_description, li.gfield.gfield_error.gfield_contains_required div.ginput_container, li.gfield.gfield_error.gfield_contains_required fieldset legend.gfield_label, .gform_wrapper li.gfield.gfield_error.gfield_contains_required label.gfield_label {
+
+        margin-left: 0px !important;
+
+    }
+
+    .gform_body li.gfield.gfield_error.gfield_contains_required div.gfield_description {
+
+        max-width: 100% !important;
+        padding-right: 0px !important;
+
+    }
+
+    .gfield_description+.gform_wrapper .gfield_description.validation_message, .ginput_container+.gfield_description.validation_message {
+
+        margin-top: 0px !important;
+
+    }
+
+    .gform_body .gfield_description.validation_message, .gform_body .top_label .gfield_description.validation_message {
+
+        padding: 0px !important;
+
+    }
+
+    .gform_body .gfield_html.gfield_no_follows_desc {
+
+        margin-top: 0px !important;
+
+    }
+
+    .gform_body .recaptcha_input_area {
+
+        height: auto !important;
+
+    }
+
+    .gform_body li.gfield.gfield_error, .gform_body li.gfield.gfield_error.gfield_contains_required.gfield_creditcard_warning {
+
+        margin-bottom: 0px !important;
+
+    }
+
+    .gfield_description, .gsection_description {
+
+        &:first-letter {
+            text-transform: uppercase;
+        }
+
+    }
+
+    .gfield_description + .gform_wrapper .gfield_description.validation_message, .ginput_container + .gfield_description.validation_message {
+
+        margin-top: $form-spacing-small !important;
+
+    }
+
+    .ginput_container {
+
+        overflow: visible !important;
+
+    }
+
+    li.gfield.gfield_error, li.gfield.gfield_error.gfield_contains_required.gfield_creditcard_warning {
+
+        border: 0px solid !important;
+
+    }
+
+    li.gfield_error input[type=email], li.gfield_error input[type=number], li.gfield_error input[type=password], li.gfield_error input[type=tel], li.gfield_error input[type=text], li.gfield_error input[type=url], li.gfield_error textarea {
+
+        border-width: $field-border-width !important;
+        border-color: $validation-field-border-color !important;
+
+    }
+
+    .top_label li.gfield.gf_left_half {
+
+        width: 50% !important;
+        margin-right: 0px !important;
+        padding-right: $form-spacing-tiny !important;
+
+    }
+
+    .top_label li.gfield.gf_right_half {
+
+        width: 50% !important;
+        margin: 0px !important;
+        margin-top: $form-spacing-small !important;
+        padding-left: $form-spacing-tiny !important;
+
+    }
+
+    .gfield_error .gfield_label {
+
+        color: $validation-text-color;
+
+    }
+
+    .validation_message {
+
+        color: $validation-text-color;
+
+    }
+
+    li.gfield_error div.ginput_complex.ginput_container label, li.gfield_error ul.gfield_checkbox, li.gfield_error ul.gfield_radio {
+
+        color: $validation-text-color;
+
+    }
+
+    li.gfield.gfield_error, li.gfield.gfield_error.gfield_contains_required.gfield_creditcard_warning {
+
+        background-color: $validation-bg-color !important;
+
+    }
+
+    li.gfield.gfield_error .gfield_description {
+
+        color: $validation-text-color;
+
+    }
+
+    li.gfield, ul.gform_fields, .gform_body, .gform_footer, .gform_page_footer {
+
+        display: block;
+        float: left;
+        width: 100%;
+
+    }
+
+    label:empty {
+
+        display: none;
+
+    }
+
+    .gfield_time_hour i {
+
+        margin-top: 0px !important;
+
+    }
+
+    .ginput_container_date {
+
+        position: relative;
+
+    }
+
+        .ui-datepicker-trigger {
+
+            position: absolute;
+            right: $form_el-padding;
+            top: $form_el-padding;
+            height: $form_el_line-height-regular !important;
+            width: auto !important;
+            cursor: pointer;
+
+        }
+
+}

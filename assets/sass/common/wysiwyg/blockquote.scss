@@ -1,0 +1,20 @@
+blockquote {
+
+    margin-left: $gutter;
+
+    cite {
+
+        @extend .heading--small;
+        display: block;
+        font-style: normal;
+        margin-top: $small_gutter;
+
+    }
+
+    p {
+
+        font-style: italic;
+
+    }
+
+}

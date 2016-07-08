@@ -1,0 +1,174 @@
+$button-vertical-space: 10px;
+$button-horizontal-space: $gutter;
+
+.button {
+
+    // Button font sizes
+    @extend .weight--bold;
+    @extend .size--regular;
+
+    // Button basics
+    padding-left: $button-horizontal-space;
+    padding-right: $button-horizontal-space;
+    padding-top: $button-vertical-space;
+    padding-bottom: $button-vertical-space;
+
+    display: inline-block;
+
+    // Override / set default link and cursor styles
+    text-decoration: none;
+    cursor: pointer;
+    text-transform: uppercase;
+
+    text-align: center;
+
+    @include border-radius($global-border-radius);
+
+    // Button transition
+    @include transition('all 0.3s');
+
+    // Space between buttons that are directly next to eachother
+    & + & {
+
+        margin-left: $gutter;
+
+    }
+
+    // Button color combinations
+    &--primary {
+
+        background-color: color('buttons', 'primary_bg');
+        color: color('buttons', 'primary_text');
+
+        @include hover() {
+
+            background-color: color('buttons', 'primary_hover');
+
+        }
+
+    }
+
+    &--secondary {
+
+        background-color: color('buttons', 'secondary_bg');
+        color: color('buttons', 'secondary_text');
+
+        @include hover() {
+
+            background-color: color('buttons', 'secondary_hover');
+
+        }
+
+    }
+
+    &--ghost {
+
+        background-color: color('buttons', 'ghost_bg');
+        color: color('buttons', 'ghost_text');
+        padding: 0px;
+
+        @include hover() {
+
+            color: color('buttons', 'ghost_hover');
+
+        }
+
+    }
+
+    // Button alignments
+    &--left {
+
+        float: left;
+        display: block;
+        margin-right: $gutter;
+
+        @include mediaquery('xs') {
+
+            display: table;
+            float: none;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: $gutter;
+
+        }
+
+        // We often need some tweaks regarding space around buttons when they are inside the WYSIWYG. Tweak on a per-project basis.
+        .wysiwyg & {
+
+            @include mediaquery('from_sm') {
+
+                margin-top: 0.5rem;
+                margin-bottom: 0.2rem;
+
+            }
+
+        }
+
+    }
+
+    &--right {
+
+        float: right;
+        display: block;
+        margin-left: $gutter;
+
+        @include mediaquery('xs') {
+
+            display: table;
+            float: none;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: $gutter;
+
+        }
+
+        // We often need some tweaks regarding space around buttons when they are inside the WYSIWYG. Tweak on a per-project basis.
+        .wysiwyg & {
+
+            @include mediaquery('from_sm') {
+
+                margin-top: 0.7rem;
+                margin-bottom: 0.2rem;
+
+            }
+
+        }
+
+    }
+
+    &--center {
+
+        display: table;
+        float: none;
+        margin-left: auto;
+        margin-right: auto;
+
+    }
+
+    &--noalign {
+
+        @include mediaquery('xs') {
+
+            display: table;
+            float: none;
+            margin-left: auto;
+            margin-right: auto;
+
+        }
+
+    }
+
+    // Icons inside the button
+    &__icon {
+
+        margin-left: $small_gutter;
+
+        use {
+
+            fill: currentColor;
+
+        }
+
+    }
+
+}

@@ -1,0 +1,33 @@
+.icon {
+
+    display: inline-block;
+    width: auto;
+
+    &--regular {
+
+        height: 1.525rem; // should be the same as the line-height of .size--regular (typography)
+        margin-bottom: -0.44rem; // -8px vertical offset
+
+    }
+
+        // sadly IE10, 11 and Androi require to set a width and height for each icon.
+        @include multiple_modifiers('.icon', '--regular', '--qikker') {
+
+            width: 1.9rem;
+
+        }
+
+    &--small {
+
+        height: 1.22rem; // should be the same as the line-height of .size--regular (typography)
+        margin-bottom: -0.3rem; // -8px vertical offset
+
+    }
+
+        @include multiple_modifiers('.icon', '--small', '--qikker') {
+
+            width: 1.7rem;
+
+        }
+
+}

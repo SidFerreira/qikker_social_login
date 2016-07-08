@@ -1,0 +1,9 @@
+@mixin multiple_modifiers($parent, $modifier_one, $modifier_two) {
+
+    @at-root #{$parent}#{$modifier_one}#{$parent}#{$modifier_two} {
+
+        @content;
+
+    }
+
+}

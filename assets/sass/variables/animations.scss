@@ -1,0 +1,6 @@
+// 'yes' enables it, any other string will disable it
+$enable_animations: 'yes';
+$enable_transitions: 'yes';
+
+$global_easing: cubic-bezier(0.16, 0.68, 0.43, 0.99); // DO NOT CHANGE VARIABLE NAME (is used in transition mixin)
+// another good one: cubic-bezier(.7,0,.3,1)

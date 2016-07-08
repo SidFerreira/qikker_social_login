@@ -1,0 +1,39 @@
+// Pre defined headings
+.heading {
+
+    &--mega {
+
+        @extend .weight--bold;
+        @extend .size--mega;
+
+    }
+
+    &--huge {
+
+        @extend .weight--bold;
+        @extend .size--huge;
+
+    }
+
+    &--medium {
+
+        @extend .weight--bold;
+        @extend .size--large;
+
+    }
+
+    &--regular {
+
+        @extend .weight--bold;
+        @extend .size--medium;
+
+    }
+
+    &--small {
+
+        @extend .weight--bold;
+        @extend .size--regular;
+
+    }
+
+}

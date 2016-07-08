@@ -1,0 +1,43 @@
+// everything related to content areas in here
+.wysiwyg, #tinymce {
+
+    color: color('content');
+
+    > * + * {
+
+        margin-top: $gutter;
+
+    }
+
+    @import "images";
+    @import "lists";
+    @import "links";
+    @import "table";
+    @import "pre";
+    @import "blockquote";
+    @import "forms";
+    @import "address";
+    @import "paragraph";
+    @import "highlight";
+    @import "headings";
+
+}
+
+// Some smart defaults for the TinyMCE editor styles
+#tinymce {
+
+    margin: $gutter;
+
+    @include mediaquery('xs') {
+
+        width: 100%;
+
+    }
+
+    @include mediaquery('from_sm') {
+
+        width: 635px;
+
+    }
+
+}

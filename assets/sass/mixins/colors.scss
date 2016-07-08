@@ -1,0 +1,5 @@
+@function color($color-name, $tone: base, $color-map: $ui_colors) {
+	
+	@return map-get(map-get($color-map, $color-name), $tone);
+
+}

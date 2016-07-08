@@ -1,0 +1,22 @@
+// Font weights
+.weight {
+
+    &--bold {
+
+        font-weight: 700;
+
+    }
+
+    &--medium {
+
+        font-weight: 500;
+
+    }
+
+    &--normal {
+
+        font-weight: 400;
+
+    }
+
+}

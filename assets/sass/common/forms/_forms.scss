@@ -1,0 +1,79 @@
+// Spacings between form elements
+$form-spacing: $gutter;
+$form-spacing-small: $form-spacing / 2;
+$form-spacing-tiny: $form-spacing / 4;
+
+// Default sizes for each form element
+$form_el-height-regular: 2.5rem;
+$form_el-font-size-regular: 1rem;
+$form_el_line-height-regular: 1.4rem;
+
+// Default sizes for each label
+$form_label-fontsize-regular: 1.2rem;
+$form_label-lineheight-regular: 1.6rem;
+$form_label-fontsize-small: 1rem;
+$form_label-lineheight-small: 1.4rem;
+
+// Padding on each form element (so input, select, etc)
+$form_el-padding: ($form_el-height-regular - $form_el_line-height-regular) / 2;
+
+$field-border-width: 3px;
+$form-border-radius: $global_border_radius;
+
+// Offsets for radio button
+$checkbox-top-offset: 8px;
+$radio-top-offset: 7px;
+
+// colors
+$field-border-color: color('form');
+$field-bg-color: color('form', 'field-bg');
+$field-text-color: color('form', 'field-text');
+$label-text-color: color('form', 'label-text');
+$validation-bg-color: color('form', 'validation-bg');
+$validation-text-color: color('form', 'validation-text');
+$validation-field-border-color: color('form', 'validation-field-border');
+$validation-main-bg-color: color('form', 'validation-main-bg');
+$validation-main-text-color: color('form', 'validation-main-text');
+
+.input {
+
+    border: $field-border-width solid $field-border-color;
+    padding-left: $form_el-padding;
+    padding-right: $form_el-padding;
+    display: block;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    @include transition('all 0.3s');
+    background-color: $field-bg-color;
+
+    // Set font-family
+    @extend .size--regular;
+
+    height: $form_el-height-regular;
+    font-size: $form_el-font-size-regular;
+    line-height: $form_el_line-height-regular;
+    width: 100%;
+
+    @include border-radius($form-border-radius);
+
+    color: $field-text-color;
+
+    @include placeholder(){
+
+        font-size: $form_el-font-size-regular;
+        line-height: $form_el_line-height-regular;
+        color: $field-text-color;
+
+    }
+
+    @import "label";
+    @import "select";
+    @import "text";
+    @import "textarea";
+    @import "radio";
+    @import "checkbox";
+
+}
+
+@import "validation";
+@import "gravityforms";
