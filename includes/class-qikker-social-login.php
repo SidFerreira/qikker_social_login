@@ -38,6 +38,8 @@ class QikkerSocialLogin
 
     const USER_AVATAR   = 'user_avatar';
 
+    const NONCE_LOGIN   = '_qsl_login';
+
     /**
      * The loader that's responsible for maintaining and registering all hooks that power
      * the plugin.
@@ -189,6 +191,9 @@ class QikkerSocialLogin
         $this->loader->add_action('show_user_profile', $this, 'userProfileInfo');
         $this->loader->add_action('edit_user_profile', $this, 'userProfileInfo');
 
+        $this->loader->add_action('wp_logout', $this, 'logoutHook');
+        $this->loader->add_action('wp_login', $this, 'loginHook');
+
     }
 
     /**
@@ -231,24 +236,21 @@ class QikkerSocialLogin
 
             $provider = $_GET['provider'];
 
-            $redirect_to = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
-            var_dump(home_url(add_query_arg(array(),$wp->request)));
-            var_dump($redirect_to);
-            die;
-            //$current_url = home_url(add_query_arg(array(),$wp->request));
-
-//            DO IT
+            $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : false;
 
             if ($_GET['action'] === self::ACTION_LOGIN) {
 
-                $this->socialLogin($provider, $redirect_to);
-                exit();
+                if (wp_verify_nonce( $_REQUEST[self::NONCE_LOGIN], self::NONCE_LOGIN )) {
+
+                    $this->login($provider);
+
+                }
 
             }
 
-            if ($_GET['action'] === self::ACTION_LOGOUT) {
+            if ($redirect_to) {
 
-                $this->socialDisconnect($provider, $redirect_to);
+                wp_safe_redirect($redirect_to);
                 exit();
 
             }
@@ -261,24 +263,13 @@ class QikkerSocialLogin
 
     public function shortcodeLogin() {
 
-        $output = '';
+        ob_start();
 
-        if(!is_user_logged_in()) {
+        include $this->locateTemplate('login.php');
 
-            
-            ob_start();
+        $output = ob_get_contents();
 
-            include $this->locateTemplate('login.php');
-
-            $output = ob_get_contents();
-
-            ob_end_clean();
-
-        } else {
-
-            $output = 'Logged In Successfully';
-
-        }
+        ob_end_clean();
 
         return $output;
         
@@ -438,11 +429,6 @@ class QikkerSocialLogin
         return $this->hybridAuthInstance;
 
     }
-    public static function login($provider) {
-
-        self::getInstance()->socialLogin($provider);
-
-    }
 
     public function usermetaIdentifierKey($provider) {
 
@@ -450,10 +436,16 @@ class QikkerSocialLogin
 
     }
 
-    public function usermetaDateKey($provider) {
+    public function usermetaAuthDateKey($provider) {
 
-        return strtolower('qsl_' . $provider . '_date');
+        return strtolower('qsl_' . $provider . '_auth');
 
+    }
+    
+    public function usermetaLoginDateKey($provider) {
+        
+        return strtolower('qsl_' . $provider . '_login');
+        
     }
 
     /**
@@ -485,139 +477,6 @@ class QikkerSocialLogin
 
     }
 
-
-    public function socialDisconnect($provider, $redirect_to = false) {
-
-        $hybridAuthInstance = $this->getHybridAuthInstance();
-
-        if (is_user_logged_in() && $hybridAuthInstance->isConnectedWith($provider)) {
-
-            $hybridUserProfile = $hybridAuthInstance->getAdapter($provider);
-            $hybridUserProfile->logout();
-
-        }
-
-        if ($redirect_to) {
-
-            if ($redirect_to === true) {
-
-                //get redirect from (Gerben Snippet)
-
-            }
-
-
-            wp_safe_redirect($redirect_to);
-            exit();
-
-        }
-
-    }
-
-    public function socialLogin($provider, $redirect_to = false)
-    {
-
-        if (is_user_logged_in()) {
-
-            return;
-
-        }
-
-        if (!$redirect_to) {
-
-            //get redirect from (Gerben Snippet)
-            $redirect_to = site_url();
-
-        }
-
-        $hybridAuthInstance = $this->getHybridAuthInstance();
-
-        try {
-
-            /** @var $facebook Hybrid_Provider_Adapter */
-            $providerAdapter = $hybridAuthInstance->authenticate($provider);
-
-            $hybridUserProfile = $providerAdapter->getUserProfile();
-
-            $email = $hybridUserProfile->email;
-
-            $wp_user = $this->findUser($hybridUserProfile, $provider);
-
-            if (apply_filters('qikker_social_login_create_users', true) && !$wp_user) {
-
-                $email_prefix = substr($email, 0, strpos($email, '@') );
-                $user_id_or_error = register_new_user($email_prefix, $email); //new WP_Error('algum erro');//
-
-                if (is_wp_error($user_id_or_error)) {
-
-                    //Send an e-mail to the blog admin / add filter
-                    do_action('qikker_social_login_user_register_error', $user_id_or_error);
-
-                } else {
-
-                    wp_set_auth_cookie( $user_id_or_error );
-
-                    update_user_meta($user_id_or_error, $this->usermetaIdentifierKey($provider), $hybridUserProfile->identifier);
-                    update_user_meta($user_id_or_error, $this->usermetaDateKey($provider), time());
-
-                    $this->setupUserData($user_id_or_error, $hybridUserProfile);
-                    $this->setupUserAvatar($user_id_or_error, $hybridUserProfile);
-
-                }
-
-            } else {
-
-                wp_set_auth_cookie( $wp_user->ID );
-
-            }
-
-            wp_safe_redirect($redirect_to);
-
-        } catch (Exception $e) {
-
-            // Display the recived error,
-            // to know more please refer to Exceptions handling section on the userguide
-            switch ($e->getCode()) {
-
-                case 0 :
-                    echo "Unspecified error.";
-                    break;
-                case 1 :
-                    echo "Hybriauth configuration error.";
-                    break;
-                case 2 :
-                    echo "Provider not properly configured.";
-                    break;
-                case 3 :
-                    echo "Unknown or disabled provider.";
-                    break;
-                case 4 :
-                    echo "Missing provider application credentials.";
-                    break;
-                case 5 :
-                    echo "Authentification failed. "
-                         . "The user has canceled the authentication or the provider refused the connection.";
-                    break;
-                case 6 :
-                    echo "User profile request failed. Most likely the user is not connected "
-                         . "to the provider and he should authenticate again.";
-                    $facebook->logout();
-                    break;
-                case 7 :
-                    echo "User not connected to the provider.";
-                    $facebook->logout();
-                    break;
-                case 8 :
-                    echo "Provider does not support this feature.";
-                    break;
-
-            }
-
-            // well, basically your should not display this to the end user, just give him a hint and move on..
-            echo "<br /><br /><b>Original error message:</b> " . $e->getMessage();
-
-        }
-
-    }
 
     public function setupUserData($user_id, $hybridUserProfile) {
 
@@ -676,11 +535,189 @@ class QikkerSocialLogin
 
     }
 
-    public static function getLoginHref($provider) {
+    public static function getCurrentUrl() {
 
-        return site_url() . '?action=' . QikkerSocialLogin::ACTION_LOGIN . '&provider=' . $provider;
+        global $wp;
+
+        return home_url(add_query_arg(array(),$wp->request));
 
     }
+
+    //region Login Functionality
+
+    public function login($provider)
+    {
+
+        if (is_user_logged_in()) {
+
+            return;
+
+        }
+
+        $hybridAuthInstance = $this->getHybridAuthInstance();
+
+        try {
+
+            $hybridUserProfile = $hybridAuthInstance->authenticate($provider)->getUserProfile();
+
+            $wp_user = $this->findUser($hybridUserProfile, $provider);
+
+            $should_create_users = apply_filters('qikker_social_login_should_create_users', true, $hybridUserProfile);
+
+            if ($should_create_users && !$wp_user) {
+
+                $this->userCreate($hybridUserProfile, $provider);
+
+            } else if($wp_user) {
+
+                wp_set_auth_cookie( $wp_user->ID );
+                do_action( 'wp_login', $wp_user->user_login, $wp_user );
+
+                update_user_meta($wp_user->ID, $this->usermetaIdentifierKey($provider), $hybridUserProfile->identifier);
+
+            }
+
+        } catch (Exception $e) {
+
+            // Display the recived error,
+            // to know more please refer to Exceptions handling section on the userguide
+            switch ($e->getCode()) {
+
+                case 0 :
+                    echo "Unspecified error.";
+                    break;
+                case 1 :
+                    echo "Hybriauth configuration error.";
+                    break;
+                case 2 :
+                    echo "Provider not properly configured.";
+                    break;
+                case 3 :
+                    echo "Unknown or disabled provider.";
+                    break;
+                case 4 :
+                    echo "Missing provider application credentials.";
+                    break;
+                case 5 :
+                    echo "Authentification failed. "
+                         . "The user has canceled the authentication or the provider refused the connection.";
+                    break;
+                case 6 :
+                    echo "User profile request failed. Most likely the user is not connected "
+                         . "to the provider and he should authenticate again.";
+                    $facebook->logout();
+                    break;
+                case 7 :
+                    echo "User not connected to the provider.";
+                    $facebook->logout();
+                    break;
+                case 8 :
+                    echo "Provider does not support this feature.";
+                    break;
+
+            }
+
+            // well, basically your should not display this to the end user, just give him a hint and move on..
+            echo "<br /><br /><b>Original error message:</b> " . $e->getMessage();
+
+        }
+
+    }
+
+    public function userCreate($hybridUserProfile, $provider) {
+
+        $email = $hybridUserProfile->email;
+
+        $username = substr($email, 0, strpos($email, '@') );
+
+        if( username_exists( $username ) ) {
+
+            $try = 1;
+            $tmp_username = $username;
+
+            do {
+
+                $tmp_username = $username . "_" . ($try++);
+
+            } while( username_exists ($tmp_username));
+
+            $username = $tmp_username;
+
+        }
+
+        $user_id_or_error = register_new_user($username, $email); //new WP_Error('algum erro');//
+
+        if (is_wp_error($user_id_or_error)) {
+
+            //Send an e-mail to the blog admin / add filter
+            do_action('qikker_social_login_user_register_error', $user_id_or_error);
+
+            $user_id_or_error = false;
+
+        } else {
+
+            wp_set_auth_cookie( $user_id_or_error );
+
+            update_user_meta($user_id_or_error, $this->usermetaIdentifierKey($provider), $hybridUserProfile->identifier);
+            update_user_meta($user_id_or_error, $this->usermetaAuthDateKey($provider), time());
+            update_user_meta($user_id_or_error, $this->usermetaLoginDateKey($provider), time());
+
+            $this->setupUserData($user_id_or_error, $hybridUserProfile);
+            $this->setupUserAvatar($user_id_or_error, $hybridUserProfile);
+
+        }
+
+        return $user_id_or_error;
+
+    }
+
+    public static function loginHref($provider, $redirect_to = true) {
+
+        if ($redirect_to === true) {
+
+            $redirect_to = self::getCurrentUrl();
+
+        }
+
+        return wp_nonce_url( site_url() . '?action=' . self::ACTION_LOGIN .
+               '&provider=' . $provider . '&redirect_to=' . urlencode($redirect_to), self::NONCE_LOGIN, self::NONCE_LOGIN);
+
+    }
+
+    public static function logoutHref($redirect_to = true) {
+
+        if ($redirect_to === true) {
+
+            $redirect_to = self::getCurrentUrl();
+
+        }
+
+        return wp_logout_url($redirect_to);
+
+    }
+
+    public function loginHook() {
+
+        update_user_meta(get_current_user_id(), $this->usermetaLoginDateKey('wordpress'), time());
+
+    }
+
+    public function logoutHook() {
+
+        $hybridAuthInstance = $this->getHybridAuthInstance();
+
+        $providers = $hybridAuthInstance->getConnectedProviders();
+
+        foreach($providers as $provider) {
+
+            $hybridUserProfile = $hybridAuthInstance->getAdapter($provider);
+            $hybridUserProfile->logout();
+
+        }
+
+    }
+
+    //endregion
 
     public function userProfileInfo($profileuser) {
         ?>
@@ -757,7 +794,6 @@ class QikkerSocialLogin
     public function locateTemplate($template_name) {
 
         $template = locate_template( trailingslashit( $this->plugin_name ) . $template_name );
-
 
         if (!$template) {
 
