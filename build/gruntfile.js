@@ -147,6 +147,26 @@ module.exports = function(grunt) {
 
         },
 
+        // We minify our (generated) JS and move them to the public folder
+        uglify: {
+
+            production: {
+
+                expand: true,
+                // Enable dynamic expansion.
+                cwd: '<%= projectPath %>/caches/js/',
+                // Src matches are relative to this path.
+                src: ['*.js'],
+                // Actual pattern(s) to match.
+                dest: '<%= projectPath %>/public/js/',
+                // Destination path prefix.
+                ext: '.min.js',
+                // Dest filepaths will have this extension.
+
+            }
+
+        },
+
         jshint: {
 
             both: {
@@ -173,26 +193,6 @@ module.exports = function(grunt) {
 
         },
 
-        // We minify our (generated) JS and move them to the public folder
-        uglify: {
-
-            production: {
-
-                expand: true,
-                // Enable dynamic expansion.
-                cwd: '<%= projectPath %>/caches/js/',
-                // Src matches are relative to this path.
-                src: ['*.js'],
-                // Actual pattern(s) to match.
-                dest: '<%= projectPath %>/public/js/',
-                // Destination path prefix.
-                ext: '.min.js',
-                // Dest filepaths will have this extension.
-
-            }
-
-        },
-
         // translation
         pot: {
 
@@ -206,7 +206,7 @@ module.exports = function(grunt) {
 
             files:{
 
-                src:  [ '<%= projectPath %>/**/*.php' ],
+                src:  [ '<%= projectPath %>/**/*.php', '!<%= projectPath %>/build/**/*.php' ],
                 expand: true,
 
             }
@@ -234,7 +234,7 @@ module.exports = function(grunt) {
 
                 files: [
 
-                    {expand: true, flatten: true, src: ['<%= assetPath %>/replace/assets-js.php'], dest: '<%= projectPath %>/includes/generated/'}
+                    {expand: true, flatten: true, src: ['<%= assetPath %>/replace/assets-js.php'], dest: '<%= projectPath %>/includes/assets/'}
 
                 ]
 
@@ -259,7 +259,7 @@ module.exports = function(grunt) {
 
                 files: [
 
-                    {expand: true, flatten: true, src: ['<%= assetPath %>/replace/assets-js_vendor.php'], dest: '<%= projectPath %>/functions/generated/'}
+                    {expand: true, flatten: true, src: ['<%= assetPath %>/replace/assets-js_vendor.php'], dest: '<%= projectPath %>/includes/assets/'}
 
                 ]
 
@@ -284,7 +284,7 @@ module.exports = function(grunt) {
 
                 files: [
 
-                    {expand: true, flatten: true, src: ['<%= assetPath %>/replace/assets-js_both.php'], dest: '<%= projectPath %>/functions/generated/'}
+                    {expand: true, flatten: true, src: ['<%= assetPath %>/replace/assets-js_both.php'], dest: '<%= projectPath %>/includes/assets/'}
 
                 ]
 
@@ -309,7 +309,7 @@ module.exports = function(grunt) {
 
                 files: [
 
-                    {expand: true, flatten: true, src: ['<%= assetPath %>/replace/assets-css_development.php'], dest: '<%= projectPath %>/functions/generated/'}
+                    {expand: true, flatten: true, src: ['<%= assetPath %>/replace/assets-css_development.php'], dest: '<%= projectPath %>/includes/assets/'}
 
                 ]
 
@@ -539,7 +539,7 @@ module.exports = function(grunt) {
                             bust : false,
                             sprite : '../icons.svg',
                             render      : {
-                                scss    : true      // Activate Sass output (with default options)
+                                scss    : false      // Activate Sass output (with default options)
                             },
                             svg : {
 
