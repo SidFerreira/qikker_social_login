@@ -5,7 +5,7 @@
 		global $localurl;
 		global $gravityforms;
 
-		$vendorurl = $localurl . '/public/js/vendor-1467975911158939173.js';
+		$vendorurl = $localurl . '/public/js/vendor-1467976930727178287.js';
 
 		// Load the JS
 		wp_register_script('qikker_vendor_js', $vendorurl, null, null, $gravityforms);

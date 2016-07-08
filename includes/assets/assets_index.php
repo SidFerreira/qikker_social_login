@@ -3,7 +3,6 @@
     $localurl = get_bloginfo('stylesheet_directory'); // set the URL of your installation here
 
     // Detect Gravity forms
-    include_once(ABSPATH . 'wp-admin/includes/plugin.php');
     $gravityforms = !is_plugin_active('gravityforms/gravityforms.php');
 
     if(getenv('APP_ENV') == 'dev'){

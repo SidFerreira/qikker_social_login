@@ -5,7 +5,7 @@
 
 		global $localurl;
 
-		$cssurl = $localurl . '/public/css/styles-1467975911158939173.css';
+		$cssurl = $localurl . '/public/css/styles-1467976930727178287.css';
 
 		// Load the CSS
 		wp_register_style('qikker_css', $cssurl, null, null);

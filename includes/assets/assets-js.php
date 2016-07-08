@@ -5,7 +5,7 @@
 		global $localurl;
 		global $gravityforms;
 
-		$jsurl = $localurl . '/public/js/custom-1467975911158939173.js';
+		$jsurl = $localurl . '/public/js/custom-1467976930727178287.js';
 
 		// Load the JS
 		wp_register_script('qikker_js', $jsurl, null, null, $gravityforms);
