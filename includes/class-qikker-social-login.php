@@ -228,6 +228,8 @@ class QikkerSocialLogin
 
         add_shortcode('qikker_social_login_form', array($this, 'shortcodeLogin'));
 
+        $this->getHybridAuthInstance();
+
     }
 
     public function doParseRequest($valid, $wp, $extra_query_vars) {
@@ -261,7 +263,27 @@ class QikkerSocialLogin
 
     }
 
+    public function checkIfStillConnected($provider) {
+
+        $valid = true;
+
+        try {
+
+            $hybridAdapter = $this->getHybridAuthInstance()->getAdapter($provider)->getUserProfile();
+
+        } catch ( Exception $e ) {
+
+            $valid = false;
+
+        }
+
+        return $valid;
+
+    }
+
     public function shortcodeLogin() {
+
+        var_dump($this->checkIfStillConnected('facebook'));
 
         ob_start();
 
