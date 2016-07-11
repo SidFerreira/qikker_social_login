@@ -534,6 +534,8 @@ class QikkerSocialLogin
 
     #endregion
 
+    #region User Data Manipulation
+
     /**
      * @param $hybridUserProfile Hybrid_User_Profile
      * @param $provider String
@@ -630,7 +632,87 @@ class QikkerSocialLogin
 
     }
 
-    //region Login / Register Core
+
+    /**
+     * Tries to update the current connected profiles.
+     * Each provider will be updated or logged off if it fails to update.
+     * If after all providers are processed we logged off from all providers
+     * We'll logoff from WP it self.
+     */
+    public function updateProfiles() {
+
+        if (is_user_logged_in()) {
+
+            $providers = $this->getHybridAuthInstance()->getConnectedProviders();
+
+            if (count($providers)) {
+
+                foreach ($providers as $provider) {
+
+                    $this->updateProfile($provider);
+
+                }
+
+                $providers = $this->getHybridAuthInstance()->getConnectedProviders();
+
+                if (!count($providers)) {
+
+                    wp_logout();
+                    wp_safe_redirect($this->getCurrentUrl(array('logout-reason' => 'social')));
+
+                    exit();
+
+                }
+
+            }
+
+        }
+
+    }
+
+    public function saveUserProfile($provider, $hybridUserProfile) {
+
+        $profile = (array) $hybridUserProfile;
+        $profile['updated'] = time();
+
+        update_user_meta( get_current_user_id() , $this->usermetaProfileKey($provider), $profile);
+
+    }
+
+    public function updateProfile($provider) {
+
+        $valid = true;
+
+        $hybridAdapter = $this->getHybridAuthInstance()->getAdapter($provider);
+
+        try {
+
+            $this->saveUserProfile($provider, $hybridAdapter->getUserProfile());
+
+        } catch ( Exception $e ) {
+
+            $previous = $e->getPrevious();
+
+            if ($previous) {
+
+                // Facebook
+                if ( method_exists($previous, 'getType') && $previous->getType() === 'OAuthException' ) {
+
+                    $hybridAdapter->logout();
+
+                }
+
+            }
+
+        }
+
+        return $valid;
+
+    }
+
+    #endregion
+
+    #region Login / Register Core
 
     private function assignAuthInformation($user_id, $provider, $hybridUserProfile) {
 
@@ -811,82 +893,6 @@ class QikkerSocialLogin
 
     #endregion
 
-    /**
-     * Tries to update the current connected profiles.
-     * Each provider will be updated or logged off if it fails to update.
-     * If after all providers are processed we logged off from all providers
-     * We'll logoff from WP it self.
-     */
-    public function updateProfiles() {
-
-        if (is_user_logged_in()) {
-
-            $providers = $this->getHybridAuthInstance()->getConnectedProviders();
-
-            if (count($providers)) {
-
-                foreach ($providers as $provider) {
-
-                    $this->updateProfile($provider);
-
-                }
-
-                $providers = $this->getHybridAuthInstance()->getConnectedProviders();
-
-                if (!count($providers)) {
-
-                    wp_logout();
-                    wp_safe_redirect($this->getCurrentUrl(array('logout-reason' => 'social')));
-
-                    exit();
-
-                }
-
-            }
-
-        }
-
-    }
-
-    public function saveUserProfile($provider, $hybridUserProfile) {
-
-        $profile = (array) $hybridUserProfile;
-        $profile['updated'] = time();
-
-        update_user_meta( get_current_user_id() , $this->usermetaProfileKey($provider), $profile);
-
-    }
-
-    public function updateProfile($provider) {
-
-        $valid = true;
-
-        $hybridAdapter = $this->getHybridAuthInstance()->getAdapter($provider);
-
-        try {
-
-            $this->saveUserProfile($provider, $hybridAdapter->getUserProfile());
-
-        } catch ( Exception $e ) {
-
-            $previous = $e->getPrevious();
-
-            if ($previous) {
-
-                // Facebook
-                if ( method_exists($previous, 'getType') && $previous->getType() === 'OAuthException' ) {
-
-                    $hybridAdapter->logout();
-
-                }
-
-            }
-
-        }
-
-        return $valid;
-
-    }
 
     #region Templates
 
