@@ -30,6 +30,8 @@
 class QikkerSocialLogin
 {
 
+    #region Constants and Singletons
+
     const ACTION_LOGIN = 'qsl-do-social-login';
 
     const ACTION_LOGOUT = 'qsl-do-social-logout';
@@ -39,6 +41,82 @@ class QikkerSocialLogin
     const USER_AVATAR   = 'user_avatar';
 
     const NONCE_LOGIN   = '_qsl_login';
+
+    /**
+     * "Singleton"
+     * @var $hybridAuthInstance Hybrid_Auth
+     */
+    private $hybridAuthInstance;
+
+    /**
+     * Singleton
+     * @var $instance QikkerSocialLogin
+     */
+    private static $instance;
+
+    public static function getInstance()
+    {
+
+        if (!self::$instance) {
+
+            self::$instance = new QikkerSocialLogin();
+
+        }
+
+        return self::$instance;
+
+    }
+
+    public function getHybridAuthInstance()
+    {
+
+        if (!$this->hybridAuthInstance) {
+
+            if (!class_exists('Hybrid_Auth')) {
+
+                require_once plugin_dir_path(dirname(__FILE__)) . 'vendor/hybridauth/Hybrid/Auth.php';
+
+            }
+
+            $this->hybridAuthInstance = new Hybrid_Auth($this->getConfig());
+
+        }
+
+        return $this->hybridAuthInstance;
+
+    }
+
+    #endregion
+
+    #region Usermeta Helpers
+
+    public function usermetaIdentifierKey($provider) {
+
+        return strtolower('qsl_' . $provider . '_identifier');
+
+    }
+
+    public function usermetaAuthDateKey($provider) {
+
+        return strtolower('qsl_' . $provider . '_auth');
+
+    }
+
+    public function usermetaLoginDateKey($provider) {
+
+        return strtolower('qsl_' . $provider . '_login');
+
+    }
+
+    public function usermetaProfileKey($provider) {
+
+        return strtolower('qsl_' . $provider . '_profile');
+
+    }
+
+    #endregion
+
+    #region Contructor and Setup
 
     /**
      * The loader that's responsible for maintaining and registering all hooks that power
@@ -87,6 +165,7 @@ class QikkerSocialLogin
         $this->setLocale();
         $this->defineAdminHooks();
         $this->definePublicHooks();
+        $this->defineShortcodes();
         $this->defineFilters();
 
     }
@@ -165,7 +244,7 @@ class QikkerSocialLogin
     private function defineAdminHooks()
     {
 
-        $plugin_admin = new QikkerSocialLoginAdmin($this->get_plugin_name(), $this->get_version());
+        $plugin_admin = new QikkerSocialLoginAdmin($this->getPluginName(), $this->getVersion());
 
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
@@ -182,17 +261,31 @@ class QikkerSocialLogin
     private function definePublicHooks()
     {
 
-        $plugin_public = new QikkerSocialLoginPublic($this->get_plugin_name(), $this->get_version());
+        $plugin_public = new QikkerSocialLoginPublic($this->getPluginName(), $this->getVersion());
 
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueueStyles');
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueueScripts');
 
         $this->loader->add_action('init', $this, 'onWpInit', 10, 3);
-        $this->loader->add_action('show_user_profile', $this, 'userProfileInfo');
-        $this->loader->add_action('edit_user_profile', $this, 'userProfileInfo');
+        $this->loader->add_action('show_user_profile', $this, 'templateProfileInfo');
+        $this->loader->add_action('edit_user_profile', $this, 'templateProfileInfo');
 
         $this->loader->add_action('wp_logout', $this, 'logoutHook');
         $this->loader->add_action('wp_login', $this, 'loginHook');
+
+    }
+
+    /**
+     * Register all of the shortcodes
+     * of the plugin.
+     *
+     * @since    1.0.0
+     * @access   private
+     */
+    private function defineShortcodes()
+    {
+
+        add_shortcode('qikker_social_login_form', array($this, 'templateLoginForm'));
 
     }
 
@@ -207,7 +300,6 @@ class QikkerSocialLogin
     {
 
         $this->loader->add_filter('get_avatar_url', $this, 'getAvatarUrl', 10, 3);
-        $this->loader->add_filter('do_parse_request', $this, 'doParseRequest', 10, 3);
 
     }
 
@@ -224,121 +316,6 @@ class QikkerSocialLogin
 
     }
 
-    public function onWpInit() {
-
-        add_shortcode('qikker_social_login_form', array($this, 'shortcodeLogin'));
-
-        $this->getHybridAuthInstance();
-
-    }
-
-    public function doParseRequest($valid, $wp, $extra_query_vars) {
-
-        if (isset($_GET['action']) && isset($_GET['provider'])) {
-
-            $provider = $_GET['provider'];
-
-            $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : false;
-
-            if ($_GET['action'] === self::ACTION_LOGIN) {
-
-                if (wp_verify_nonce( $_REQUEST[self::NONCE_LOGIN], self::NONCE_LOGIN )) {
-
-                    $this->login($provider);
-
-                }
-
-            }
-
-            if ($redirect_to) {
-
-                wp_safe_redirect($redirect_to);
-                exit();
-
-            }
-
-        }
-
-        return $valid;
-
-    }
-
-    public function checkIfStillConnected($provider) {
-
-        $valid = true;
-
-        try {
-
-            $hybridAdapter = $this->getHybridAuthInstance()->getAdapter($provider)->getUserProfile();
-
-        } catch ( Exception $e ) {
-
-            $valid = false;
-
-        }
-
-        return $valid;
-
-    }
-
-    public function shortcodeLogin() {
-
-        var_dump($this->checkIfStillConnected('facebook'));
-
-        ob_start();
-
-        include $this->locateTemplate('login.php');
-
-        $output = ob_get_contents();
-
-        ob_end_clean();
-
-        return $output;
-        
-    }
-
-    public function getAvatarUrl($url, $id_or_email, $args) {
-
-        if (is_object($id_or_email)) {
-
-            if ('WP_Comment' === get_class($id_or_email)) {
-
-                $id_or_email = $id_or_email->user_id;
-
-            }
-
-        }
-
-        if (!$id_or_email) {
-
-            return $url;
-
-        }
-
-        $user = get_user_by('id', $id_or_email);
-
-        if (!$user) {
-
-            $user = get_user_by('email', $id_or_email);
-
-        }
-
-        if ($user) {
-
-            $attachment_id = get_user_meta($user->ID, 'avatar_attachment_id', true);
-
-            if ($attachment_id && $attacument_url = wp_get_attachment_thumb_url($attachment_id)) {
-
-                $url = $attacument_url;
-
-            }
-
-        }
-
-        return $url;
-
-    }
-
     /**
      * The name of the plugin used to uniquely identify it within the context of
      * WordPress and to define internationalization functionality.
@@ -346,7 +323,7 @@ class QikkerSocialLogin
      * @since     1.0.0
      * @return    string    The name of the plugin.
      */
-    public function get_plugin_name()
+    public function getPluginName()
     {
         return $this->plugin_name;
     }
@@ -357,7 +334,7 @@ class QikkerSocialLogin
      * @since     1.0.0
      * @return    QikkerSocialLoginLoader    Orchestrates the hooks of the plugin.
      */
-    public function get_loader()
+    public function getLoader()
     {
         return $this->loader;
     }
@@ -368,10 +345,14 @@ class QikkerSocialLogin
      * @since     1.0.0
      * @return    string    The version number of the plugin.
      */
-    public function get_version()
+    public function getVersion()
     {
         return $this->version;
     }
+
+    #endregion
+
+    #region Configuration
 
     private function getConfig()
     {
@@ -428,65 +409,130 @@ class QikkerSocialLogin
 
     }
 
-    /**
-     * @var $instance QikkerSocialLogin
-     */
-    private static $instance;
+    #endregion
 
-    public static function getInstance()
-    {
+    #region Actions and Filters
 
-        if (!self::$instance) {
+    public function onWpInit() {
 
-            self::$instance = new QikkerSocialLogin();
+        $this->getHybridAuthInstance();
 
-        }
+        if (!is_user_logged_in()) {
 
-        return self::$instance;
+            if (isset($_GET['action']) && isset($_GET['provider'])) {
 
-    }
+                $provider = $_GET['provider'];
 
-    /**
-     * @var $hybridAuthInstance Hybrid_Auth
-     */
-    private $hybridAuthInstance;
+                $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : false;
 
-    public function getHybridAuthInstance()
-    {
+                if ($_GET['action'] === self::ACTION_LOGIN) {
 
-        if (!$this->hybridAuthInstance) {
+                    if (wp_verify_nonce( $_REQUEST[self::NONCE_LOGIN], self::NONCE_LOGIN )) {
 
-            if (!class_exists('Hybrid_Auth')) {
+                        $this->login($provider);
 
-                require_once plugin_dir_path(dirname(__FILE__)) . 'vendor/hybridauth/Hybrid/Auth.php';
+                    }
+
+                }
+
+                if ($redirect_to) {
+
+                    wp_safe_redirect($redirect_to);
+                    exit();
+
+                }
 
             }
 
-            $this->hybridAuthInstance = new Hybrid_Auth($this->getConfig());
+        }
+
+        if (is_user_logged_in()) {
+
+            $this->updateProfiles();
 
         }
 
-        return $this->hybridAuthInstance;
+    }
+
+    public function loginHook() {
+
+        $user_id = get_current_user_id();
+
+        update_user_meta($user_id, $this->usermetaLoginDateKey('wordpress'), time());
+
+        $providers = $this->getHybridAuthInstance()->getConnectedProviders();
+
+        foreach($providers as $provider) {
+
+            update_user_meta($user_id, $this->usermetaLoginDateKey($provider), time());
+
+        }
 
     }
 
-    public function usermetaIdentifierKey($provider) {
+    public function logoutHook() {
 
-        return strtolower('qsl_' . $provider . '_identifier');
+        $hybridAuthInstance = $this->getHybridAuthInstance();
+
+        $providers = $hybridAuthInstance->getConnectedProviders();
+
+        foreach($providers as $provider) {
+
+            $hybridUserProfile = $hybridAuthInstance->getAdapter($provider);
+            $hybridUserProfile->logout();
+
+            delete_user_meta(get_current_user_id(), $this->usermetaLoginDateKey($provider));
+
+        }
+
+        delete_user_meta(get_current_user_id(), $this->usermetaLoginDateKey('wordpress'));
 
     }
 
-    public function usermetaAuthDateKey($provider) {
 
-        return strtolower('qsl_' . $provider . '_auth');
+    public function getAvatarUrl($url, $id_or_email, $args) {
+
+        if (is_object($id_or_email)) {
+
+            if ('WP_Comment' === get_class($id_or_email)) {
+
+                $id_or_email = $id_or_email->user_id;
+
+            }
+
+        }
+
+        if (!$id_or_email) {
+
+            return $url;
+
+        }
+
+        $user = get_user_by('id', $id_or_email);
+
+        if (!$user) {
+
+            $user = get_user_by('email', $id_or_email);
+
+        }
+
+        if ($user) {
+
+            $attachment_id = get_user_meta($user->ID, 'avatar_attachment_id', true);
+
+            if ($attachment_id && $attacument_url = wp_get_attachment_thumb_url($attachment_id)) {
+
+                $url = $attacument_url;
+
+            }
+
+        }
+
+        return $url;
 
     }
-    
-    public function usermetaLoginDateKey($provider) {
-        
-        return strtolower('qsl_' . $provider . '_login');
-        
-    }
+
+    #endregion
 
     /**
      * @param $hybridUserProfile Hybrid_User_Profile
@@ -517,7 +563,6 @@ class QikkerSocialLogin
 
     }
 
-
     public function setupUserData($user_id, $hybridUserProfile) {
 
         $userdata = get_userdata($user_id);
@@ -536,9 +581,19 @@ class QikkerSocialLogin
 
         $current_social_photo_url = get_user_meta($user_id, 'social_photo_url', true);
 
-        if ($hybridUserProfile->photoURL && $hybridUserProfile != $current_social_photo_url) {
+        $social_photo_url = $hybridUserProfile->photoURL;
 
-            update_user_meta($user_id, 'social_photo_url', $hybridUserProfile->photoURL);
+        if ($hybridUserProfile->photoURL && $social_photo_url != $current_social_photo_url) {
+
+            update_user_meta($user_id, 'social_photo_url', $social_photo_url);
+
+            if (strpos($social_photo_url, 'facebook')) {
+
+                $parts = explode('?', $social_photo_url);
+                $social_photo_url = $parts[0] . '?width=1500&height=1500'; //Probably 232 x 232
+
+            }
+
 
             if (!function_exists('download_url')) {
 
@@ -548,7 +603,7 @@ class QikkerSocialLogin
 
             }
 
-            $downloaded_file = download_url($hybridUserProfile->photoURL, 10);
+            $downloaded_file = download_url($social_photo_url, 10);
 
             $downloaded_data = array(
                 'name'     => $user_id . '.jpg',
@@ -575,18 +630,23 @@ class QikkerSocialLogin
 
     }
 
-    public static function getCurrentUrl() {
+    //region Login / Register Core
 
-        global $wp;
+    private function assignAuthInformation($user_id, $provider, $hybridUserProfile) {
 
-        return home_url(add_query_arg(array(),$wp->request));
+        update_user_meta($user_id, $this->usermetaIdentifierKey($provider), $hybridUserProfile->identifier);
+        update_user_meta($user_id, $this->usermetaAuthDateKey($provider), time());
 
     }
 
-    //region Login Functionality
+    private function loginUser($user_id) {
 
-    public function login($provider)
-    {
+        wp_set_auth_cookie( $user_id );
+        wp_set_current_user( $user_id );
+
+    }
+
+    public function login($provider) {
 
         if (is_user_logged_in()) {
 
@@ -594,28 +654,34 @@ class QikkerSocialLogin
 
         }
 
-        $hybridAuthInstance = $this->getHybridAuthInstance();
-
         try {
 
-            $hybridUserProfile = $hybridAuthInstance->authenticate($provider)->getUserProfile();
+            $hybridUserProfile = $this->getHybridAuthInstance()->authenticate($provider)->getUserProfile();
 
             $wp_user = $this->findUser($hybridUserProfile, $provider);
 
-            $should_create_users = apply_filters('qikker_social_login_should_create_users', true, $hybridUserProfile);
+            if (!$wp_user && apply_filters('qikker_social_login_should_create_users', true, $hybridUserProfile)) {
 
-            if ($should_create_users && !$wp_user) {
-
-                $this->userCreate($hybridUserProfile, $provider);
-
-            } else if($wp_user) {
-
-                wp_set_auth_cookie( $wp_user->ID );
-                do_action( 'wp_login', $wp_user->user_login, $wp_user );
-
-                update_user_meta($wp_user->ID, $this->usermetaIdentifierKey($provider), $hybridUserProfile->identifier);
+                $wp_user = $this->userCreate($hybridUserProfile, $provider);
 
             }
+
+            if($wp_user) {
+
+                $this->loginUser($wp_user->ID);
+
+                if (!get_user_meta($wp_user->ID, $this->usermetaIdentifierKey($provider))) {
+
+                    $this->assignAuthInformation($wp_user->ID, $provider, $hybridUserProfile);
+
+                }
+
+                $this->saveUserProfile($provider, $hybridUserProfile);
+
+                do_action( 'wp_login', $wp_user->user_login, $wp_user );
+
+            }
+
 
         } catch (Exception $e) {
 
@@ -664,6 +730,11 @@ class QikkerSocialLogin
 
     }
 
+    /**
+     * @param $hybridUserProfile Hybrid_User_Profile
+     * @param $provider String
+     * @return WP_User | boolean
+     */
     public function userCreate($hybridUserProfile, $provider) {
 
         $email = $hybridUserProfile->email;
@@ -696,20 +767,22 @@ class QikkerSocialLogin
 
         } else {
 
-            wp_set_auth_cookie( $user_id_or_error );
+            $this->loginUser($user_id_or_error);
 
-            update_user_meta($user_id_or_error, $this->usermetaIdentifierKey($provider), $hybridUserProfile->identifier);
-            update_user_meta($user_id_or_error, $this->usermetaAuthDateKey($provider), time());
-            update_user_meta($user_id_or_error, $this->usermetaLoginDateKey($provider), time());
+            $this->assignAuthInformation($user_id_or_error, $provider, $hybridUserProfile);
 
             $this->setupUserData($user_id_or_error, $hybridUserProfile);
             $this->setupUserAvatar($user_id_or_error, $hybridUserProfile);
 
+            return new WP_User($user_id_or_error);
+
         }
 
-        return $user_id_or_error;
-
     }
+
+    //endregion
+
+    #region Links and Buttons
 
     public static function loginHref($provider, $redirect_to = true) {
 
@@ -720,7 +793,7 @@ class QikkerSocialLogin
         }
 
         return wp_nonce_url( site_url() . '?action=' . self::ACTION_LOGIN .
-               '&provider=' . $provider . '&redirect_to=' . urlencode($redirect_to), self::NONCE_LOGIN, self::NONCE_LOGIN);
+                             '&provider=' . $provider . '&redirect_to=' . urlencode($redirect_to), self::NONCE_LOGIN, self::NONCE_LOGIN);
 
     }
 
@@ -736,86 +809,129 @@ class QikkerSocialLogin
 
     }
 
-    public function loginHook() {
+    #endregion
 
-        update_user_meta(get_current_user_id(), $this->usermetaLoginDateKey('wordpress'), time());
+    /**
+     * Tries to update the current connected profiles.
+     * Each provider will be updated or logged off if it fails to update.
+     * If after all providers are processed we logged off from all providers
+     * We'll logoff from WP it self.
+     */
+    public function updateProfiles() {
 
-    }
+        if (is_user_logged_in()) {
 
-    public function logoutHook() {
+            $providers = $this->getHybridAuthInstance()->getConnectedProviders();
 
-        $hybridAuthInstance = $this->getHybridAuthInstance();
+            if (count($providers)) {
 
-        $providers = $hybridAuthInstance->getConnectedProviders();
+                foreach ($providers as $provider) {
 
-        foreach($providers as $provider) {
+                    $this->updateProfile($provider);
 
-            $hybridUserProfile = $hybridAuthInstance->getAdapter($provider);
-            $hybridUserProfile->logout();
+                }
+
+                $providers = $this->getHybridAuthInstance()->getConnectedProviders();
+
+                if (!count($providers)) {
+
+                    wp_logout();
+                    wp_safe_redirect($this->getCurrentUrl(array('logout-reason' => 'social')));
+
+                    exit();
+
+                }
+
+            }
 
         }
 
     }
 
-    //endregion
+    public function saveUserProfile($provider, $hybridUserProfile) {
 
-    public function userProfileInfo($profileuser) {
-        ?>
-        <h2>Social Sessions</h2>
-        <table class="form-table">
-            <tbody>
-                <?php
+        $profile = (array) $hybridUserProfile;
+        $profile['updated'] = time();
 
-                    $qikkerSocialLogin = QikkerSocialLogin::getInstance();
+        update_user_meta( get_current_user_id() , $this->usermetaProfileKey($provider), $profile);
 
-                    $providers = array_keys($qikkerSocialLogin->getProviderConfig());
+    }
 
-                    foreach($providers as $provider) {
-                        ?>
+    public function updateProfile($provider) {
 
-                        <tr class="user-sessions-wrap">
-                            <th><?=$provider;?></th>
-                            <td aria-live="assertive">
-                                <?php
+        $valid = true;
 
-                                    $social_login_date = get_user_meta($profileuser->ID, $qikkerSocialLogin->usermetaDateKey($provider), true);
+        $hybridAdapter = $this->getHybridAuthInstance()->getAdapter($provider);
 
-                                    if ($social_login_date) {
+        try {
 
-                                        if ($profileuser->ID === get_current_user_id()){
+            $this->saveUserProfile($provider, $hybridAdapter->getUserProfile());
 
-                                            ?>
-                                                <div class="destroy-sessions">
-                                                    <a href="?action=<?=QikkerSocialLogin::ACTION_LOGOUT;?>&provider=<?=$provider;?>"
-                                                       type="button" class="button button-secondary">Disconnect</a>
-                                                </div>
-                                            <?php
+        } catch ( Exception $e ) {
 
-                                        }
+            $previous = $e->getPrevious();
 
-                                        ?>
-                                            <p class="description">Connected since: <?= date('r', $social_login_date); ?></p>
-                                        <?php
-                                    } else {
+            if ($previous) {
 
-                                        ?>
-                                            <p class="description">Not connected.</p>
-                                        <?php
+                // Facebook
+                if ( method_exists($previous, 'getType') && $previous->getType() === 'OAuthException' ) {
 
-                                    }
-                                ?>
-                            </td>
-                        </tr>
+                    $hybridAdapter->logout();
 
-                    <?php
+                }
 
-                    }
+            }
 
-                ?>
+        }
 
-            </tbody>
-        </table>
-<?php
+        return $valid;
+
+    }
+
+    #region Templates
+
+    public function templateLoginForm() {
+
+        ob_start();
+
+        include $this->locateTemplate('login.php');
+
+        $output = ob_get_contents();
+
+        ob_end_clean();
+
+        return $output;
+
+    }
+
+
+    public function templateProfileInfo($profileuser) {
+
+        $qikkerSocialLogin = QikkerSocialLogin::getInstance();
+
+        $providers = array_keys($qikkerSocialLogin->getProviderConfig());
+
+        ob_start();
+
+        include $this->locateTemplate('admin/profile.php');
+
+        $output = ob_get_contents();
+
+        ob_end_clean();
+
+        return $output;
+
+    }
+
+    #endregion
+
+    #region Templating Methods
+
+    public static function getCurrentUrl($args = array()) {
+
+        global $wp;
+
+        return home_url(add_query_arg($args,$wp->request));
 
     }
 
@@ -845,4 +961,5 @@ class QikkerSocialLogin
 
     }
 
+    #endregion
 }
