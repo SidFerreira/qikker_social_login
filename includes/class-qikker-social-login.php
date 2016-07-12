@@ -573,9 +573,7 @@ class QikkerSocialLogin
 
     function filterLoginErrors( $errors ) {
 
-        if ( is_wp_error($errors) ) {
-
-//            var_dump($user_or_error);
+        if ( is_wp_error($errors) && !isset($_GET['reauth'])) {
 
             $referrer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();  // where did the post submission come from?
 
