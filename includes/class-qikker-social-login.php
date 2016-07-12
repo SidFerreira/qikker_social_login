@@ -158,7 +158,7 @@ class QikkerSocialLogin
     public function __construct()
     {
 
-        $this->plugin_name = self::PLUGIN_NAME; // @TODO mode to constant
+        $this->plugin_name = self::PLUGIN_NAME;
         $this->version = '0.2';
 
         $this->loadDependencies();
@@ -286,6 +286,8 @@ class QikkerSocialLogin
     {
 
         add_shortcode('qikker_social_login_form', array($this, 'templateLoginForm'));
+
+        add_shortcode('qikker_social_login_button', array($this, 'templateLoginButton'));
 
     }
 
@@ -429,7 +431,7 @@ class QikkerSocialLogin
 
                     if (wp_verify_nonce( $_REQUEST[self::NONCE_LOGIN], self::NONCE_LOGIN )) {
 
-                        $this->login($provider);
+                        $this->authenticate($provider);
 
                     }
 
@@ -437,7 +439,23 @@ class QikkerSocialLogin
 
                 if ($redirect_to) {
 
-                    wp_safe_redirect($redirect_to);
+                    if ($redirect_to === 'refresh_parent') {
+
+                        ?>
+<script>
+
+    window.opener.location.reload();
+    window.close();
+
+</script>
+                        <?php
+
+                    } else {
+
+                        wp_safe_redirect($redirect_to);
+
+                    }
+
                     exit();
 
                 }
@@ -728,7 +746,7 @@ class QikkerSocialLogin
 
     }
 
-    public function login($provider) {
+    public function authenticate($provider) {
 
         if (is_user_logged_in()) {
 
@@ -736,9 +754,17 @@ class QikkerSocialLogin
 
         }
 
+        $hybridUserProfile = false;
+
         try {
 
             $hybridUserProfile = $this->getHybridAuthInstance()->authenticate($provider)->getUserProfile();
+
+            if (!$hybridUserProfile->email) {
+
+                throw new Exception('Invalid e-mail', 101);
+
+            }
 
             $wp_user = $this->findUser($hybridUserProfile, $provider);
 
@@ -766,7 +792,7 @@ class QikkerSocialLogin
 
 
         } catch (Exception $e) {
-
+            /*
             // Display the recived error,
             // to know more please refer to Exceptions handling section on the userguide
             switch ($e->getCode()) {
@@ -793,20 +819,42 @@ class QikkerSocialLogin
                 case 6 :
                     echo "User profile request failed. Most likely the user is not connected "
                          . "to the provider and he should authenticate again.";
-                    $facebook->logout();
+
                     break;
                 case 7 :
                     echo "User not connected to the provider.";
-                    $facebook->logout();
+
                     break;
                 case 8 :
                     echo "Provider does not support this feature.";
                     break;
 
+            }*/
+
+            if ($hybridUserProfile) {
+
+                $hybridUserProfile->logout();
+
             }
 
+            do_action('qsl_authentication_failed', $e);
+
             // well, basically your should not display this to the end user, just give him a hint and move on..
-            echo "<br /><br /><b>Original error message:</b> " . $e->getMessage();
+            //echo "<br /><br /><b>Original error message:</b> " . $e->getMessage();
+
+        }
+
+    }
+
+    public function unauthenticate($provider) {
+
+        if ($provider === 'Facebook') {
+
+            if ($this->getHybridAuthInstance()->isConnectedWith($provider)) {
+
+                $this->getHybridAuthInstance()->getAdapter('Facebook')->adapter->api->api('/me/permissions', 'DELETE');
+
+            }
 
         }
 
@@ -866,7 +914,7 @@ class QikkerSocialLogin
 
     #region Links and Buttons
 
-    public static function loginHref($provider, $redirect_to = true) {
+    public static function loginHref($provider, $redirect_to = true, $extra_query = '') {
 
         if ($redirect_to === true) {
 
@@ -874,8 +922,11 @@ class QikkerSocialLogin
 
         }
 
-        return wp_nonce_url( site_url() . '?action=' . self::ACTION_LOGIN .
-                             '&provider=' . $provider . '&redirect_to=' . urlencode($redirect_to), self::NONCE_LOGIN, self::NONCE_LOGIN);
+        $url = site_url() . '?action=' . self::ACTION_LOGIN .
+               '&provider=' . $provider . '&redirect_to=' . urlencode($redirect_to) .
+               '&' . $extra_query;
+
+        return wp_nonce_url($url , self::NONCE_LOGIN, self::NONCE_LOGIN);
 
     }
 
@@ -910,22 +961,29 @@ class QikkerSocialLogin
 
     }
 
+    public function templateLoginButton() {
 
-    public function templateProfileInfo($profileuser) {
-
-        $qikkerSocialLogin = QikkerSocialLogin::getInstance();
-
-        $providers = array_keys($qikkerSocialLogin->getProviderConfig());
+        add_thickbox();
 
         ob_start();
 
-        include $this->locateTemplate('admin/profile.php');
+        include $this->locateTemplate('login_button.php');
 
         $output = ob_get_contents();
 
         ob_end_clean();
 
         return $output;
+
+    }
+
+    public function templateProfileInfo($profileuser) {
+
+        $qikkerSocialLogin = $this;
+
+        $providers = array_keys($qikkerSocialLogin->getProviderConfig());
+
+        include $this->locateTemplate('admin/profile.php');
 
     }
 

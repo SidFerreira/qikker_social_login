@@ -11,19 +11,19 @@
             <td aria-live="assertive">
                 <?php
 
-                $social_login_date = get_user_meta($profileuser->ID, $qikkerSocialLogin->usermetaDateKey($provider), true);
+                $social_login_date = get_user_meta($profileuser->ID, $qikkerSocialLogin->usermetaAuthDateKey($provider), true);
 
                 if ($social_login_date) {
 
                     if ($profileuser->ID === get_current_user_id()){
-
+/*
                         ?>
                         <div class="destroy-sessions">
                             <a href="?action=<?=QikkerSocialLogin::ACTION_LOGOUT;?>&provider=<?=$provider;?>"
-                               type="button" class="button button-secondary">Disconnect</a>
+                               type="button" class="button button-secondary">Logout</a>
                         </div>
                         <?php
-
+*/
                     }
 
                     ?>
