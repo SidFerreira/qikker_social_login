@@ -36,15 +36,15 @@ class QikkerSocialLogin
 
     const PLUGIN_INITIALS   = 'qsl';
 
-    const ACTION_AUTH       = self::PLUGIN_INITIALS . '-do-social-auth';
+    const ACTION_AUTH       = 'qsl-do-social-auth';
 
-    const ACTION_LOGIN      = self::PLUGIN_INITIALS . '-do-social-login';
+    const ACTION_LOGIN      = 'qsl-do-social-login';
 
-    const ACTION_LOGOUT     = self::PLUGIN_INITIALS . '-do-social-logout';
+    const ACTION_LOGOUT     = 'qsl-do-social-logout';
 
-    const NONCE_AUTH        = self::PLUGIN_INITIALS . '_auth';
+    const NONCE_AUTH        = 'qsl_auth';
 
-    const NONCE_LOGIN       = self::PLUGIN_INITIALS . '_login';
+    const NONCE_LOGIN       = 'qsl_login';
 
     /* Same pattern as ACF */
     const USER_AVATAR       = 'user_avatar';
