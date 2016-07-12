@@ -1,5 +1,11 @@
 <?php
 
+    if (is_user_logged_in()) {
+
+        return;
+
+    }
+
     $http_post = ('POST' == $_SERVER['REQUEST_METHOD']);
 
     if ( !get_option('users_can_register') ) {
@@ -8,6 +14,8 @@
         exit();
 
     }
+
+wp_signon();
 
 
     if (isset($args['errors'])) {
@@ -28,7 +36,7 @@
           class="registerform qsl__form qsl__form--register"
           method="post" novalidate="novalidate">
 
-        <?php foreach($args['fields'] as $field => $config) { $value = isset($values[$field]) ? $values[$field] : ''; ?>
+        <?php foreach($args['fields'] as $field => $config) { $value = isset($_POST[$field]) ? $_POST[$field] : ''; ?>
 
             <p>
 

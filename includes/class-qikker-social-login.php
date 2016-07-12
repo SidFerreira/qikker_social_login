@@ -130,7 +130,7 @@ class QikkerSocialLogin
 
     #endregion
 
-    #region Contructor and Setup
+    #region Protected
 
     /**
      * The loader that's responsible for maintaining and registering all hooks that power
@@ -160,6 +160,9 @@ class QikkerSocialLogin
      */
     protected $version;
 
+    #endregion
+
+    #region Setup - Constructor
     /**
      * Define the core functionality of the plugin.
      *
@@ -183,6 +186,10 @@ class QikkerSocialLogin
         $this->defineFilters();
 
     }
+
+    #endregion
+
+    #region Setup - Loaders
 
     /**
      * Load the required dependencies for this plugin.
@@ -248,6 +255,10 @@ class QikkerSocialLogin
 
     }
 
+    #endregion
+
+    #region Setup - Hooks
+
     /**
      * Register all of the hooks related to the admin area functionality
      * of the plugin.
@@ -287,8 +298,6 @@ class QikkerSocialLogin
         $this->loader->add_action('wp_logout', $this, 'logoutHook');
         $this->loader->add_action('wp_login', $this, 'loginHook');
 
-        $this->loader->add_action('authenticate', $this, 'my_front_end_login_fail', 9999);
-
     }
 
     /**
@@ -320,8 +329,15 @@ class QikkerSocialLogin
 
         $this->loader->add_filter('get_avatar_url', $this, 'getAvatarUrl', 10, 3);
         $this->loader->add_filter('login_form_top', $this, 'loginFormErrors', 10, 2);
+        $this->loader->add_filter('wp_login_errors', $this, 'filterLoginErrors', 10, 2);
+
+        //$errors = apply_filters( 'wp_login_errors', $errors, $redirect_to );filterLoginErrors
 
     }
+
+    #endregion
+
+    #region Basic Methods
 
     /**
      * Run the loader to execute all of the hooks with WordPress.
@@ -430,7 +446,7 @@ class QikkerSocialLogin
 
     #endregion
 
-    #region Actions and Filters
+    #region Actions and Filters Methods
 
     public function onWpInit() {
 
@@ -446,7 +462,7 @@ class QikkerSocialLogin
 
                 if ($_GET['action'] === self::ACTION_AUTH) {
 
-                    if (wp_verify_nonce( $_REQUEST[self::NONCE_AUTH], self::NONCE_AUTH )) {
+                    if (wp_verify_nonce($_REQUEST[self::NONCE_AUTH], self::NONCE_AUTH)) {
 
                         $this->authenticate($provider);
 
@@ -459,12 +475,12 @@ class QikkerSocialLogin
                     if ($redirect_to === 'refresh_parent') {
 
                         ?>
-<script>
+                        <script>
 
-    window.opener.location.reload();
-    window.close();
+                            window.opener.location.reload();
+                            window.close();
 
-</script>
+                        </script>
                         <?php
 
                     } else {
@@ -477,15 +493,15 @@ class QikkerSocialLogin
 
                 }
 
-            }
+            } else if (isset($_GET['action'])) {
 
-        } else if ( isset($_GET['action']) ) {
+                if ($_GET['action'] === self::ACTION_LOGIN) {
 
-            if ($_GET['action'] === self::ACTION_LOGIN) {
+                    if (wp_verify_nonce($_REQUEST[self::NONCE_LOGIN], self::NONCE_LOGIN)) {
 
-                if (wp_verify_nonce( $_REQUEST[self::NONCE_AUTH], self::NONCE_AUTH )) {
+                        $this->registerate();
 
-                    $this->registerate();
+                    }
 
                 }
 
@@ -551,6 +567,42 @@ class QikkerSocialLogin
         }
 
         return $output;
+
+    }
+
+
+    function filterLoginErrors( $errors ) {
+
+        if ( is_wp_error($errors) ) {
+
+//            var_dump($user_or_error);
+
+            $referrer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();  // where did the post submission come from?
+
+            $error_array = (array) $errors;
+
+            foreach ($error_array['errors'] as $error_code => $messages) {
+
+                foreach ($messages as $k => $message) {
+
+                    $error_array['errors'][$error_code][$k] = urlencode($message);
+
+                }
+
+            }
+
+            $login_url = wp_login_url();
+
+            if ( !empty($referrer) && (strpos($referrer, $login_url) !== 0) && !strstr($referrer,'wp-admin') ) {
+
+                $referrer = add_query_arg(array(self::PLUGIN_INITIALS . '_login_error' => $error_array), $referrer);
+
+                wp_redirect( $referrer );  // let's append some information (login=failed) to the URL for the theme to use
+                exit;
+
+            }
+
+        }
 
     }
 
@@ -911,24 +963,24 @@ class QikkerSocialLogin
 
             if (isset($config['required']) && $config['required'] && empty($values[$field])) {
 
-                $errors->add( 'empty_' . $field,
-                    '<strong>'. __( 'ERROR' ) . '</strong>:' .
-                    __( 'Please enter' ) . ' ' . strtolower($config['label']) . '.' );
+                $errors->add( 'empty_' . $field, $config['required_error']);
 
             }
 
         }
 
+        $error = false;
+
         if (!count($errors->get_error_codes())) {
 
-            $user_id_or_error = register_new_user($values['username'], $values['email']); //new WP_Error('algum erro');//
+            $user_id_or_error = register_new_user($values['user_login'], $values['user_email']); //new WP_Error('algum erro');//
 
             if (is_wp_error($user_id_or_error)) {
 
                 //Send an e-mail to the blog admin / add filter
                 do_action('qikker_social_login_register_error', $user_id_or_error);
 
-                return $user_id_or_error;
+                $error = $user_id_or_error;
 
             } else {
 
@@ -936,7 +988,26 @@ class QikkerSocialLogin
 
                 $this->setupUserData($user_id_or_error, $values);
 
+                if (isset($_POST['redirect_to'])) {
+
+                    wp_safe_redirect($_POST['redirect_to']);
+                    exit();
+
+                }
+
+                return $user_id_or_error;
+
             }
+
+        } else {
+
+            $error = $errors;
+
+        }
+
+        if ($error) {
+
+            $_GET[self::PLUGIN_INITIALS . '_register_error'] = (array) $error;
 
         }
 
@@ -1013,11 +1084,15 @@ class QikkerSocialLogin
 
     public static function getRegisterFields() {
 
+        $error_label = '<strong>' . __( 'ERROR' ) . '</strong>: ';
+        $please_enter_a = __( 'Please enter a ' );
+
         $fields = apply_filters(self::PLUGIN_INITIALS . '_register_fields', array(
 
             'user_login' => array(
                 'label'    => __('Username'),
-                'required' => true
+                'required' => true,
+                'required_error' => $error_label . $please_enter_a . strtolower(__('Username')) . '.'
             ),
             'user_nicename' => array(
                 'label'    => __('Nickname'),
@@ -1025,15 +1100,18 @@ class QikkerSocialLogin
             ),
             'first_name' => array(
                 'label'    => __('First name'),
-                'required' => true
+                'required' => true,
+                'required_error' => $error_label . $please_enter_a .  strtolower(__('First name')) . '.'
             ),
             'last_name' => array(
                 'label'    => __('Last name'),
-                'required' => true
+                'required' => true,
+                'required_error' => $error_label . $please_enter_a . strtolower(__('Last name')) . '.'
             ),
             'user_email' => array(
                 'label'    => __('Email'),
-                'required' => true
+                'required' => true,
+                'required_error' => $error_label . $please_enter_a . strtolower(__('Email')) . '.'
             )
 
         ));
@@ -1155,7 +1233,7 @@ class QikkerSocialLogin
             'id_remember'       => 'rememberme',
             'id_submit'         => 'wp-submit',
             'remember'          => false,
-            'value_username'    => '',
+            'value_username'    => 'developer5',
             // Set 'value_remember' to true to default the "Remember me" checkbox to checked.
             'value_remember'        => false,
         );
@@ -1183,6 +1261,14 @@ class QikkerSocialLogin
         $output = ob_get_contents();
 
         ob_end_clean();
+
+        return $output;
+
+    }
+
+    public static function getSocialLoginBottom($output = '') {
+
+        $output .= '<input type="hidden" name="' . self::PLUGIN_INITIALS . '_login" value="1">';
 
         return $output;
 
@@ -1285,36 +1371,5 @@ class QikkerSocialLogin
     }
 
     #endregion
-
-    function my_front_end_login_fail( $user_or_error ) {
-
-        if ( is_wp_error($user_or_error) && isset($_SERVER['HTTP_REFERER'])) {
-
-            $referrer = $_SERVER['HTTP_REFERER'];  // where did the post submission come from?
-
-            $error_array = (array) $user_or_error;
-
-            foreach ($error_array['errors'] as $error_code => $messages) {
-
-                foreach ($messages as $k => $message) {
-
-                    $error_array['errors'][$error_code][$k] = urlencode($message);
-
-                }
-
-            }
-
-            if ( !empty($referrer) && !strstr($referrer,'wp-login') && !strstr($referrer,'wp-admin') ) {
-
-                $referrer = add_query_arg(array(self::PLUGIN_INITIALS . '_login_error' => $error_array), $referrer);
-
-                wp_redirect( $referrer );  // let's append some information (login=failed) to the URL for the theme to use
-                exit;
-
-            }
-
-        }
-
-    }
 
 }
