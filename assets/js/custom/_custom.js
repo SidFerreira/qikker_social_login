@@ -7,7 +7,6 @@ jQuery(window).load(function() {
 
             window.open($(e.target).data('href'), null, "height=520,width=520,top=200,left=200,status=yes,toolbar=no,menubar=no,location=no");
 
-
         });
 
     }

@@ -32,15 +32,23 @@ class QikkerSocialLogin
 
     #region Constants and Singletons
 
-    const ACTION_LOGIN = 'qsl-do-social-login';
+    const PLUGIN_NAME       = 'qikker-social-login';
 
-    const ACTION_LOGOUT = 'qsl-do-social-logout';
+    const PLUGIN_INITIALS   = 'qsl';
 
-    const PLUGIN_NAME   = 'qikker-social-login';
+    const ACTION_AUTH       = self::PLUGIN_INITIALS . '-do-social-auth';
 
-    const USER_AVATAR   = 'user_avatar';
+    const ACTION_LOGIN      = self::PLUGIN_INITIALS . '-do-social-login';
 
-    const NONCE_LOGIN   = '_qsl_login';
+    const ACTION_LOGOUT     = self::PLUGIN_INITIALS . '-do-social-logout';
+
+    const NONCE_AUTH        = self::PLUGIN_INITIALS . '_auth';
+
+    const NONCE_LOGIN       = self::PLUGIN_INITIALS . '_login';
+
+    /* Same pattern as ACF */
+    const USER_AVATAR       = 'user_avatar';
+
 
     /**
      * "Singleton"
@@ -92,25 +100,31 @@ class QikkerSocialLogin
 
     public function usermetaIdentifierKey($provider) {
 
-        return strtolower('qsl_' . $provider . '_identifier');
+        return strtolower( self::PLUGIN_INITIALS . '_' . $provider . '_identifier');
 
     }
 
     public function usermetaAuthDateKey($provider) {
 
-        return strtolower('qsl_' . $provider . '_auth');
+        return strtolower( self::PLUGIN_INITIALS . '_' . $provider . '_auth');
 
     }
 
     public function usermetaLoginDateKey($provider) {
 
-        return strtolower('qsl_' . $provider . '_login');
+        return strtolower( self::PLUGIN_INITIALS . '_' . $provider . '_login');
 
     }
 
     public function usermetaProfileKey($provider) {
 
-        return strtolower('qsl_' . $provider . '_profile');
+        return strtolower( self::PLUGIN_INITIALS . '_' . $provider . '_profile');
+
+    }
+
+    public function usermetaPermissionsKey($provider) {
+
+        return strtolower( self::PLUGIN_INITIALS . '_' . $provider . '_permissions');
 
     }
 
@@ -273,6 +287,8 @@ class QikkerSocialLogin
         $this->loader->add_action('wp_logout', $this, 'logoutHook');
         $this->loader->add_action('wp_login', $this, 'loginHook');
 
+        $this->loader->add_action('authenticate', $this, 'my_front_end_login_fail', 9999);
+
     }
 
     /**
@@ -282,10 +298,11 @@ class QikkerSocialLogin
      * @since    1.0.0
      * @access   private
      */
-    private function defineShortcodes()
-    {
+    private function defineShortcodes() {
 
         add_shortcode('qikker_social_login_form', array($this, 'templateLoginForm'));
+
+        add_shortcode('qikker_social_register_form', array($this, 'templateRegisterForm'));
 
         add_shortcode('qikker_social_login_button', array($this, 'templateLoginButton'));
 
@@ -302,6 +319,7 @@ class QikkerSocialLogin
     {
 
         $this->loader->add_filter('get_avatar_url', $this, 'getAvatarUrl', 10, 3);
+        $this->loader->add_filter('login_form_top', $this, 'loginFormErrors', 10, 2);
 
     }
 
@@ -361,8 +379,8 @@ class QikkerSocialLogin
 
         return apply_filters('qikker_social_login_config', array(
             "base_url" => $this->getHybridAuthEntrypointUrl(),
-            "debug_mode" => true,
-            "debug_file" => plugin_dir_path(__file__) . '../qsl.log',
+            "debug_mode" => false,
+            "debug_file" => plugin_dir_path(__DIR__) . '/qsl.log',
             "providers" => $this->getProviderConfig()
         ));
 
@@ -371,8 +389,7 @@ class QikkerSocialLogin
     private function getHybridAuthEntrypointUrl()
     {
 
-        return apply_filters('qikker_social_login_config_entrypoint',
-            plugins_url('vendor/hybridauth/', dirname(__FILE__)) . "/");
+        return plugins_url('vendor/hybridauth/', dirname(__FILE__)) . "/";
 
     }
 
@@ -388,7 +405,7 @@ class QikkerSocialLogin
                     "enabled" => true,
                     "keys" => array("id" => "289669238047330", "secret" => "0d8414a87a389b04231ff89f8cf81fec"),
                     "trustForwarded" => false,
-                    "scope" => "email, user_about_me, user_birthday, user_hometown, user_website, user_friends, user_photos",
+                    "scope" => "email, user_about_me, user_birthday, user_hometown, user_website, user_friends, user_photos, user_likes",
                     "display" => "popup"
                 )
             );
@@ -400,14 +417,14 @@ class QikkerSocialLogin
                     "enabled" => true,
                     "keys" => array("id" => "288424601505127", "secret" => "4a0bb2de87d206ac55d4cc84ada7f07b"),
                     "trustForwarded" => false,
-                    "scope" => "email, user_about_me, user_birthday, user_hometown, user_website, user_friends, user_photos",
+                    "scope" => "email, user_about_me, user_birthday, user_hometown, user_website, user_friends, user_photos, user_likes",
                     "display" => "popup"
                 )
             );
 
         }
 
-        return apply_filters('qikker_social_login_config_provider', $base_config);
+        return $base_config;
 
     }
 
@@ -427,9 +444,9 @@ class QikkerSocialLogin
 
                 $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : false;
 
-                if ($_GET['action'] === self::ACTION_LOGIN) {
+                if ($_GET['action'] === self::ACTION_AUTH) {
 
-                    if (wp_verify_nonce( $_REQUEST[self::NONCE_LOGIN], self::NONCE_LOGIN )) {
+                    if (wp_verify_nonce( $_REQUEST[self::NONCE_AUTH], self::NONCE_AUTH )) {
 
                         $this->authenticate($provider);
 
@@ -457,6 +474,18 @@ class QikkerSocialLogin
                     }
 
                     exit();
+
+                }
+
+            }
+
+        } else if ( isset($_GET['action']) ) {
+
+            if ($_GET['action'] === self::ACTION_LOGIN) {
+
+                if (wp_verify_nonce( $_REQUEST[self::NONCE_AUTH], self::NONCE_AUTH )) {
+
+                    $this->registerate();
 
                 }
 
@@ -507,46 +536,21 @@ class QikkerSocialLogin
 
     }
 
+    public function loginFormErrors($output, $args) {
 
-    public function getAvatarUrl($url, $id_or_email, $args) {
+        if (isset($args['errors'])) {
 
-        if (is_object($id_or_email)) {
-
-            if ('WP_Comment' === get_class($id_or_email)) {
-
-                $id_or_email = $id_or_email->user_id;
-
-            }
+            $output .= $args['errors'];
 
         }
 
-        if (!$id_or_email) {
+        if (isset($args['messages'])) {
 
-            return $url;
-
-        }
-
-        $user = get_user_by('id', $id_or_email);
-
-        if (!$user) {
-
-            $user = get_user_by('email', $id_or_email);
+            $output .= $args['messages'];
 
         }
 
-        if ($user) {
-
-            $attachment_id = get_user_meta($user->ID, 'avatar_attachment_id', true);
-
-            if ($attachment_id && $attacument_url = wp_get_attachment_thumb_url($attachment_id)) {
-
-                $url = $attacument_url;
-
-            }
-
-        }
-
-        return $url;
+        return $output;
 
     }
 
@@ -561,21 +565,23 @@ class QikkerSocialLogin
      */
     public function findUser($hybridUserProfile, $provider) {
 
-        $wp_user = get_user_by('email', $hybridUserProfile->email);
+        $wp_user = false;
+
+        $results = get_users(array(
+            'meta_key'   => $this->usermetaIdentifierKey($provider),
+            'meta_value' => $hybridUserProfile->identifier,
+            'compare'    => '='
+        ));
+
+        if ($results && count($results)) {
+
+            $wp_user = $results[0];
+
+        }
 
         if (!$wp_user) {
 
-            $results = get_users(array(
-                'meta_key'   => $this->usermetaIdentifierKey($provider),
-                'meta_value' => $hybridUserProfile->identifier,
-                'compare'    => '='
-            ));
-
-            if ($results && count($results)) {
-
-                $wp_user = $results[0];
-
-            }
+            $wp_user = get_user_by('email', $hybridUserProfile->email);
 
         }
 
@@ -583,15 +589,15 @@ class QikkerSocialLogin
 
     }
 
-    public function setupUserData($user_id, $hybridUserProfile) {
+    public function setupUserData($user_id, $user_fields) {
 
         $userdata = get_userdata($user_id);
 
-        $userdata->user_nicename = $hybridUserProfile->displayName;
-        $userdata->display_name  = $hybridUserProfile->displayName;
-        $userdata->first_name    = $hybridUserProfile->firstName;
-        $userdata->last_name     = $hybridUserProfile->lastName;
-        $userdata->description   = $hybridUserProfile->description;
+        foreach($user_fields as $field => $value) {
+
+            $userdata->{$field} = $value;
+
+        }
 
         wp_update_user($userdata);
 
@@ -728,6 +734,48 @@ class QikkerSocialLogin
 
     }
 
+    public function getAvatarUrl($url, $id_or_email, $args) {
+
+        if (is_object($id_or_email)) {
+
+            if ('WP_Comment' === get_class($id_or_email)) {
+
+                $id_or_email = $id_or_email->user_id;
+
+            }
+
+        }
+
+        if (!$id_or_email) {
+
+            return $url;
+
+        }
+
+        $user = get_user_by('id', $id_or_email);
+
+        if (!$user) {
+
+            $user = get_user_by('email', $id_or_email);
+
+        }
+
+        if ($user) {
+
+            $attachment_id = get_user_meta($user->ID, 'avatar_attachment_id', true);
+
+            if ($attachment_id && $attacument_url = wp_get_attachment_thumb_url($attachment_id)) {
+
+                $url = $attacument_url;
+
+            }
+
+        }
+
+        return $url;
+
+    }
+
     #endregion
 
     #region Login / Register Core
@@ -754,11 +802,13 @@ class QikkerSocialLogin
 
         }
 
-        $hybridUserProfile = false;
+        $hybridAdapter = false;
 
         try {
 
-            $hybridUserProfile = $this->getHybridAuthInstance()->authenticate($provider)->getUserProfile();
+            $hybridAdapter = $this->getHybridAuthInstance()->authenticate($provider);
+
+            $hybridUserProfile = $hybridAdapter->getUserProfile();
 
             if (!$hybridUserProfile->email) {
 
@@ -846,13 +896,64 @@ class QikkerSocialLogin
 
     }
 
-    public function unauthenticate($provider) {
+    public function registerate() {
+
+        $errors = new WP_Error();
+
+        $fields = self::getRegisterFields();
+
+        $values = array();
+
+        //Required Fields Validation
+        foreach($fields as $field => $config) {
+
+            $values[$field] = isset($_POST[$field]) ? $_POST[$field] : '';
+
+            if (isset($config['required']) && $config['required'] && empty($values[$field])) {
+
+                $errors->add( 'empty_' . $field,
+                    '<strong>'. __( 'ERROR' ) . '</strong>:' .
+                    __( 'Please enter' ) . ' ' . strtolower($config['label']) . '.' );
+
+            }
+
+        }
+
+        if (!count($errors->get_error_codes())) {
+
+            $user_id_or_error = register_new_user($values['username'], $values['email']); //new WP_Error('algum erro');//
+
+            if (is_wp_error($user_id_or_error)) {
+
+                //Send an e-mail to the blog admin / add filter
+                do_action('qikker_social_login_register_error', $user_id_or_error);
+
+                return $user_id_or_error;
+
+            } else {
+
+                $this->loginUser($user_id_or_error);
+
+                $this->setupUserData($user_id_or_error, $values);
+
+            }
+
+        }
+
+    }
+
+    public function unlink($provider) {
 
         if ($provider === 'Facebook') {
 
             if ($this->getHybridAuthInstance()->isConnectedWith($provider)) {
 
                 $this->getHybridAuthInstance()->getAdapter('Facebook')->adapter->api->api('/me/permissions', 'DELETE');
+                delete_user_meta(get_current_user_id(), $this->usermetaIdentifierKey($provider));
+                delete_user_meta(get_current_user_id(), $this->usermetaAuthDateKey($provider));
+                delete_user_meta(get_current_user_id(), $this->usermetaProfileKey($provider));
+                delete_user_meta(get_current_user_id(), $this->usermetaLoginDateKey($provider));
+                delete_user_meta(get_current_user_id(), $this->usermetaPermissionsKey($provider));
 
             }
 
@@ -891,9 +992,9 @@ class QikkerSocialLogin
         if (is_wp_error($user_id_or_error)) {
 
             //Send an e-mail to the blog admin / add filter
-            do_action('qikker_social_login_user_register_error', $user_id_or_error);
+            do_action('qikker_social_login_auth_error', $user_id_or_error);
 
-            $user_id_or_error = false;
+            return $user_id_or_error;
 
         } else {
 
@@ -901,7 +1002,7 @@ class QikkerSocialLogin
 
             $this->assignAuthInformation($user_id_or_error, $provider, $hybridUserProfile);
 
-            $this->setupUserData($user_id_or_error, $hybridUserProfile);
+            $this->setupUserData($user_id_or_error,  (array) $hybridUserProfile);
             $this->setupUserAvatar($user_id_or_error, $hybridUserProfile);
 
             return new WP_User($user_id_or_error);
@@ -910,11 +1011,42 @@ class QikkerSocialLogin
 
     }
 
+    public static function getRegisterFields() {
+
+        $fields = apply_filters(self::PLUGIN_INITIALS . '_register_fields', array(
+
+            'user_login' => array(
+                'label'    => __('Username'),
+                'required' => true
+            ),
+            'user_nicename' => array(
+                'label'    => __('Nickname'),
+                'required' => false
+            ),
+            'first_name' => array(
+                'label'    => __('First name'),
+                'required' => true
+            ),
+            'last_name' => array(
+                'label'    => __('Last name'),
+                'required' => true
+            ),
+            'user_email' => array(
+                'label'    => __('Email'),
+                'required' => true
+            )
+
+        ));
+
+        return $fields;
+
+    }
+
     //endregion
 
     #region Links and Buttons
 
-    public static function loginHref($provider, $redirect_to = true, $extra_query = '') {
+    public static function authHref($provider, $redirect_to = true, $extra_query = '') {
 
         if ($redirect_to === true) {
 
@@ -922,9 +1054,19 @@ class QikkerSocialLogin
 
         }
 
-        $url = site_url() . '?action=' . self::ACTION_LOGIN .
+        $url = site_url() . '?action=' . self::ACTION_AUTH .
                '&provider=' . $provider . '&redirect_to=' . urlencode($redirect_to) .
                '&' . $extra_query;
+
+        return wp_nonce_url($url , self::NONCE_AUTH, self::NONCE_AUTH);
+
+    }
+
+    public static function getLoginUrl($extra_query = array()) {
+
+        $extra_query['action'] = self::ACTION_LOGIN;
+
+        $url = add_query_arg($extra_query, self::getCurrentUrl());
 
         return wp_nonce_url($url , self::NONCE_LOGIN, self::NONCE_LOGIN);
 
@@ -944,14 +1086,99 @@ class QikkerSocialLogin
 
     #endregion
 
-
     #region Templates
 
-    public function templateLoginForm() {
+    public function getFormErrors($key) {
+
+        $args = array();
+
+        if ( isset($_GET[ self::PLUGIN_INITIALS . '_' . $key . '_error' ]) && $errors_data = $_GET[ self::PLUGIN_INITIALS . '_' . $key . '_error' ]) {
+
+            $error_data = isset($errors_data['error_data']) ? $errors_data['error_data'] : array();
+            $error_info = $errors_data['errors'];
+
+            $messages = '';
+            $errors   = '';
+
+            foreach ( $error_info as $code => $error_messages ) {
+
+                $severity = isset($error_data[$code]) ? $error_data[$code] : '';
+
+                foreach($error_messages as $error_message) {
+
+                    if ( 'message' == $severity )
+                        $messages .= '	' . $error_message . "<br />\n";
+                    else
+                        $errors .= '	' . $error_message . "<br />\n";
+
+                }
+
+            }
+            if ( ! empty( $errors ) ) {
+
+                $args['errors'] =  '<div id="' . $key . '_error" class="qsl__errors qsl__errors--' . $key . '">' .
+                                   apply_filters( 'login_errors', $errors ) . "</div>\n";
+
+            }
+            if ( ! empty( $messages ) ) {
+
+                $args['messages'] =  '<p class="message qsl__message qsl__message--' . $key . '">' .
+                                     apply_filters( $key . '_messages', $messages ) . "</p>\n";
+
+            }
+
+        }
+
+        return $args;
+
+    }
+
+    /**
+     * Based on wp_login_form
+     * @param array $args
+     * @return string
+     */
+    public function templateLoginForm($args = array()) {
+
+        $defaults = array(
+            'echo' => true,
+            // Default 'redirect' value takes the user back to the request URI.
+            'post_url'          => $this->getCurrentUrl(array( 'action' => self::ACTION_LOGIN )),
+            'redirect'          => $this->getCurrentUrl(),
+            'form_id'           => 'loginform',
+            'label_username'    => __( 'Username or Email' ),
+            'label_password'    => __( 'Password' ),
+            'label_remember'    => __( 'Remember Me' ),
+            'label_log_in'      => __( 'Log In' ),
+            'id_username'       => 'user_login',
+            'id_password'       => 'user_pass',
+            'id_remember'       => 'rememberme',
+            'id_submit'         => 'wp-submit',
+            'remember'          => false,
+            'value_username'    => '',
+            // Set 'value_remember' to true to default the "Remember me" checkbox to checked.
+            'value_remember'        => false,
+        );
+
+        $args = apply_filters(self::PLUGIN_INITIALS . '_login_form_args', shortcode_atts($defaults, $args), $args);
+
+        $message_args = $this->getFormErrors('login');
+
+        if (isset($message_args['errors'])) {
+
+            $args['errors'] = $message_args['errors'];
+
+        }
+
+        if (isset($message_args['messages'])) {
+
+            $args['messages'] = $message_args['messages'];
+
+        }
 
         ob_start();
 
-        include $this->locateTemplate('login.php');
+        include $this->locateTemplate('forms/login.php');
 
         $output = ob_get_contents();
 
@@ -961,13 +1188,45 @@ class QikkerSocialLogin
 
     }
 
-    public function templateLoginButton() {
+    public function templateRegisterForm($args = array()) {
 
-        add_thickbox();
+        $defaults = array(
+            'redirect'          => $this->getCurrentUrl(),
+            'fields'            => QikkerSocialLogin::getRegisterFields(),
+            'form_id'           => 'registerform',
+            'label_register'    => __( 'Register' )
+
+        );
+
+        $args = apply_filters(self::PLUGIN_INITIALS . '_register_form_args', shortcode_atts($defaults, $args), $args);
+
+        $message_args = $this->getFormErrors('register');
+
+        if (isset($message_args['errors'])) { $args['errors'] = $message_args['errors']; }
+
+        if (isset($message_args['messages'])) { $args['messages'] = $message_args['messages']; }
 
         ob_start();
 
-        include $this->locateTemplate('login_button.php');
+        include $this->locateTemplate('forms/register.php');
+
+        $output = ob_get_contents();
+
+        ob_end_clean();
+
+        return $output;
+
+    }
+
+    public function templateLoginButton($attributes = array()) {
+
+        $attributes = shortcode_atts(array('provider' => 'Facebook'), $attributes);
+
+        $provider = $attributes['provider'];
+
+        ob_start();
+
+        include $this->locateTemplate('buttons/login.php');
 
         $output = ob_get_contents();
 
@@ -1026,4 +1285,36 @@ class QikkerSocialLogin
     }
 
     #endregion
+
+    function my_front_end_login_fail( $user_or_error ) {
+
+        if ( is_wp_error($user_or_error) && isset($_SERVER['HTTP_REFERER'])) {
+
+            $referrer = $_SERVER['HTTP_REFERER'];  // where did the post submission come from?
+
+            $error_array = (array) $user_or_error;
+
+            foreach ($error_array['errors'] as $error_code => $messages) {
+
+                foreach ($messages as $k => $message) {
+
+                    $error_array['errors'][$error_code][$k] = urlencode($message);
+
+                }
+
+            }
+
+            if ( !empty($referrer) && !strstr($referrer,'wp-login') && !strstr($referrer,'wp-admin') ) {
+
+                $referrer = add_query_arg(array(self::PLUGIN_INITIALS . '_login_error' => $error_array), $referrer);
+
+                wp_redirect( $referrer );  // let's append some information (login=failed) to the URL for the theme to use
+                exit;
+
+            }
+
+        }
+
+    }
+
 }
