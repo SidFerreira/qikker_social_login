@@ -1,22 +1,12 @@
 <?php
 
-    if (is_user_logged_in()) {
+    if (is_user_logged_in() && !get_option('users_can_register')) {
 
         return;
 
     }
 
     $http_post = ('POST' == $_SERVER['REQUEST_METHOD']);
-
-    if ( !get_option('users_can_register') ) {
-
-        wp_redirect( site_url() );
-        exit();
-
-    }
-
-wp_signon();
-
 
     if (isset($args['errors'])) {
 

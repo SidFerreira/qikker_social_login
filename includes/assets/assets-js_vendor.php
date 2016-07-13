@@ -7,7 +7,7 @@
         static function getPath()
         {
 
-            return 'public/js/vendor-146828513172970171.js';
+            return 'public/js/vendor-1468371052338449454.js';
 
         }
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: qikker-wordpress-theme 1.0.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-07-11 21:58-0300\n"
+"POT-Creation-Date: 2016-07-12 21:50-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,66 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../templates/login_button.php:7
+#: ../includes/class-qikker-social-login.php:1085
+msgid "ERROR"
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1086
+msgid "Please enter a "
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1091
+#: ../includes/class-qikker-social-login.php:1093
+msgid "Username"
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1096
+msgid "Nickname"
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1100
+#: ../includes/class-qikker-social-login.php:1102
+msgid "First name"
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1105
+#: ../includes/class-qikker-social-login.php:1107
+msgid "Last name"
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1110
+#: ../includes/class-qikker-social-login.php:1112
+msgid "Email"
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1225
+msgid "Username or Email"
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1226
+msgid "Password"
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1227
+msgid "Remember Me"
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1228
+msgid "Log In"
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1281
+msgid "Register"
+msgstr ""
+
+#: ../templates/buttons/login.php:11
+msgid "Logout"
+msgstr ""
+
+#: ../templates/buttons/login.php:22
 msgid "Login"
+msgstr ""
+
+#: ../templates/forms/register.php:61
+msgid "Registration confirmation will be emailed to you."
 msgstr ""

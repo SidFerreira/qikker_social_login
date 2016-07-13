@@ -3,11 +3,9 @@ jQuery(window).load(function() {
 
     function qsl_popup_init() {
 
-        $('.qsl_popup').on('click', function (e) {
+        $('.qsl__popup').on('click', function (e) {
 
-            console.log(e);
             window.open($(e.target).data('href'), null, "height=520,width=520,top=200,left=200,status=yes,toolbar=no,menubar=no,location=no");
-
 
         });
 
@@ -16,4 +14,4 @@ jQuery(window).load(function() {
     qsl_popup_init();
     
 });
-//# sourceMappingURL=custom-146828513172970171.js.map
+//# sourceMappingURL=custom-1468371052338449454.js.map
