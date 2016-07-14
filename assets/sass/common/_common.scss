@@ -1,8 +1,14 @@
-@import
+.qsl {
 
-    "typography/_typography",
-    "header/_header",
-    "button/_button",
-    "icons/_icons",
-    "wysiwyg/_wysiwyg",
-    "forms/_forms";
+    &__form {
+
+    }
+
+    &__form--fullpage {
+
+        background-color: white;
+        padding: 30px;
+
+    }
+
+}

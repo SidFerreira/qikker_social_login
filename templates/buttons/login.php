@@ -8,7 +8,7 @@ if (is_user_logged_in()) {
     ?>
 
     <a href="<?php echo wp_login_url($url); ?>"
-       class="qsl__button--logout button button-primary button-large"><?php _e('Logout'); ?></a>
+       class="qsl__button--logout qsl__provider--<?php echo $provider; ?> button button-primary button-large"><?php _e('Logout'); ?></a>
 
     <?php
 
@@ -18,8 +18,14 @@ if (is_user_logged_in()) {
 
     ?>
 
-    <a href="javascript:void(0);" data-href="<?php echo $url; ?>"
-       class="qsl__popup qsl__button--login button button-primary button-large"><?php _e('Login'); ?></a>
+    <a xhref="javascript:void(0);" href="<?php echo $url; ?>"
+       class="qsl__popupx qsl__provider--<?php echo $provider; ?> qsl__button--login button button-primary button-large">
+
+        <?php _e('Login'); ?>
+
+        <span class="qsl__providername"><?php echo $provider; ?></span>
+
+    </a>
 
     <?php
 

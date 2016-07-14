@@ -42,7 +42,7 @@
 
                     <br />
                     <input type="text" name="<?=$field;?>" id="<?=$field;?>"
-                           class="input qsl__input" value="<?php echo esc_attr(wp_unslash($value)); ?>" size="20" />
+                           class="input qsl__input" value="<?php echo esc_attr(wp_unslash($value)); ?>" size="40" />
 
                 </label>
 
@@ -69,6 +69,7 @@
             <input type="submit" name="wp-submit" id="wp-submit"
                    class="button button-primary button-large qsl__register"
                    value="<?=$args['label_register']; ?>" />
+            
         </p>
 
     </form>

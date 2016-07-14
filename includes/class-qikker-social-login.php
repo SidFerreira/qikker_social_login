@@ -49,6 +49,8 @@ class QikkerSocialLogin
     /* Same pattern as ACF */
     const USER_AVATAR       = 'user_avatar';
 
+    const USER_PROVIDED_EMAIL   = 'qsl_user_provided_email';
+
 
     /**
      * "Singleton"
@@ -82,7 +84,7 @@ class QikkerSocialLogin
 
             if (!class_exists('Hybrid_Auth')) {
 
-                require_once plugin_dir_path(dirname(__FILE__)) . 'vendor/hybridauth/Hybrid/Auth.php';
+                require_once dirname(__DIR__) . '/vendor/hybridauth/Hybrid/Auth.php';
 
             }
 
@@ -214,24 +216,24 @@ class QikkerSocialLogin
          * The class responsible for orchestrating the actions and filters of the
          * core plugin.
          */
-        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-qikker-social-login-loader.php';
+        require_once dirname(__DIR__) . '/includes/class-qikker-social-login-loader.php';
 
         /**
          * The class responsible for defining internationalization functionality
          * of the plugin.
          */
-        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-qikker-social-login-i18n.php';
+        require_once dirname(__DIR__) . '/includes/class-qikker-social-login-i18n.php';
 
         /**
          * The class responsible for defining all actions that occur in the admin area.
          */
-        require_once plugin_dir_path(dirname(__FILE__)) . 'admin/class-qikker-social-login-admin.php';
+        require_once dirname(__DIR__) . '/admin/class-qikker-social-login-admin.php';
 
         /**
          * The class responsible for defining all actions that occur in the public-facing
          * side of the site.
          */
-        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-qikker-social-login-public.php';
+        require_once dirname(__DIR__) . '/includes/class-qikker-social-login-public.php';
 
         $this->loader = new QikkerSocialLoginLoader();
 
@@ -314,6 +316,8 @@ class QikkerSocialLogin
         add_shortcode('qikker_social_register_form', array($this, 'templateRegisterForm'));
 
         add_shortcode('qikker_social_login_button', array($this, 'templateLoginButton'));
+
+        add_shortcode('qikker_social_login_buttons', array($this, 'templateLoginButtons'));
 
     }
 
@@ -435,7 +439,14 @@ class QikkerSocialLogin
                     "trustForwarded" => false,
                     "scope" => "email, user_about_me, user_birthday, user_hometown, user_website, user_friends, user_photos, user_likes",
                     "display" => "popup"
+                ),
+
+                "Twitter" => array(
+                    "enabled" => true,
+                    "keys" => array("key" => "jwfrRd760m6WVvxsDrGz63MY9", "secret" => "cSjyqs3qM2KriaC1Ma1moqTmVKFQfTFv2ODbiWTp1kY9fob4jx"),
+                    "includeEmail" => true
                 )
+
             );
 
         }
@@ -608,6 +619,37 @@ class QikkerSocialLogin
 
     #region User Data Manipulation
 
+    static function getInvalidDomains() {
+
+        return apply_filters(self::PLUGIN_INITIALS . '_invalid_email_domains', array('@facebook.com', '@icq.com'));
+
+    }
+
+    public function isValidSocialEmail($email) {
+
+        $email = sanitize_email($email);
+
+        $name = $domain = '';
+
+        if ($email) {
+
+            list($name, $domain) = explode('@', $email, 2);
+
+        }
+        
+        $invalid_domains = self::getInvalidDomains();
+        
+        if (!$email || in_array('@' . $domain, $invalid_domains)) {
+
+
+            return false;
+
+        }
+
+        return true;
+
+    }
+
     /**
      * @param $hybridUserProfile Hybrid_User_Profile
      * @param $provider String
@@ -641,11 +683,23 @@ class QikkerSocialLogin
 
     public function setupUserData($user_id, $user_fields) {
 
+        $default_fields = _get_additional_user_keys(new WP_User());
+
         $userdata = get_userdata($user_id);
+
+        $userdata->to_array();
 
         foreach($user_fields as $field => $value) {
 
-            $userdata->{$field} = $value;
+            if (in_array($field, $default_fields)) {
+
+                $userdata->{$field} = $value;
+
+            } else {
+
+                update_user_meta($user_id, $field, $value);
+
+            }
 
         }
 
@@ -757,6 +811,9 @@ class QikkerSocialLogin
 
         $valid = true;
 
+        /**
+         * @var $hybridAdapter Hybrid_Provider_Adapter
+         */
         $hybridAdapter = $this->getHybridAuthInstance()->getAdapter($provider);
 
         try {
@@ -853,16 +910,29 @@ class QikkerSocialLogin
         }
 
         $hybridAdapter = false;
+        $hybridUserProfile = false;
 
         try {
+
+            /**
+             * @var $hybridAdapter Hybrid_Provider_Adapter
+             * @var $hybridUserProfile Hybrid_User_Profile
+             */
 
             $hybridAdapter = $this->getHybridAuthInstance()->authenticate($provider);
 
             $hybridUserProfile = $hybridAdapter->getUserProfile();
 
-            if (!$hybridUserProfile->email) {
+            if (isset($_POST[self::USER_PROVIDED_EMAIL])) {
 
-                throw new Exception('Invalid e-mail', 101);
+                $hybridUserProfile->email = sanitize_email($_POST[self::USER_PROVIDED_EMAIL]);
+
+            }
+
+            if (!$this->isValidSocialEmail($hybridUserProfile->email)) {
+
+                echo $this->templateProvideEmailForm();
+                exit();
 
             }
 
@@ -892,55 +962,16 @@ class QikkerSocialLogin
 
 
         } catch (Exception $e) {
-            /*
-            // Display the recived error,
-            // to know more please refer to Exceptions handling section on the userguide
-            switch ($e->getCode()) {
 
-                case 0 :
-                    echo "Unspecified error.";
-                    break;
-                case 1 :
-                    echo "Hybriauth configuration error.";
-                    break;
-                case 2 :
-                    echo "Provider not properly configured.";
-                    break;
-                case 3 :
-                    echo "Unknown or disabled provider.";
-                    break;
-                case 4 :
-                    echo "Missing provider application credentials.";
-                    break;
-                case 5 :
-                    echo "Authentification failed. "
-                         . "The user has canceled the authentication or the provider refused the connection.";
-                    break;
-                case 6 :
-                    echo "User profile request failed. Most likely the user is not connected "
-                         . "to the provider and he should authenticate again.";
+            if ($hybridAdapter) {
 
-                    break;
-                case 7 :
-                    echo "User not connected to the provider.";
-
-                    break;
-                case 8 :
-                    echo "Provider does not support this feature.";
-                    break;
-
-            }*/
-
-            if ($hybridUserProfile) {
-
-                $hybridUserProfile->logout();
+                $hybridAdapter->logout();
 
             }
 
-            do_action('qsl_authentication_failed', $e);
+            $this->unlink($provider);
 
-            // well, basically your should not display this to the end user, just give him a hint and move on..
-            //echo "<br /><br /><b>Original error message:</b> " . $e->getMessage();
+            do_action('qsl_authentication_failed', $e);
 
         }
 
@@ -1043,14 +1074,15 @@ class QikkerSocialLogin
 
         if( username_exists( $username ) ) {
 
-            $try = 1;
-            $tmp_username = $username;
+            $try = 0;
 
-            do {
+            $tmp_username = $username . "_" . ($try++);
+
+            while( username_exists ($tmp_username) ) {
 
                 $tmp_username = $username . "_" . ($try++);
 
-            } while( username_exists ($tmp_username));
+            }
 
             $username = $tmp_username;
 
@@ -1094,7 +1126,8 @@ class QikkerSocialLogin
             ),
             'user_nicename' => array(
                 'label'    => __('Nickname'),
-                'required' => false
+                'required' => true,
+                'required_error' => $error_label . $please_enter_a . strtolower(__('Username')) . '.'
             ),
             'first_name' => array(
                 'label'    => __('First name'),
@@ -1110,6 +1143,11 @@ class QikkerSocialLogin
                 'label'    => __('Email'),
                 'required' => true,
                 'required_error' => $error_label . $please_enter_a . strtolower(__('Email')) . '.'
+            ),
+            'pets_name' => array(
+                'label'    => __('Pet\'s name'),
+                'required' => true,
+                'required_error' => $error_label . $please_enter_a . strtolower(__('Pet\'s name')) . '.'
             )
 
         ));
@@ -1302,6 +1340,24 @@ class QikkerSocialLogin
 
     }
 
+    public function templateLoginButtons($attributes = array()) {
+
+        $providers = self::getHybridAuthInstance()->getProviders();
+
+        $output = '';
+
+        foreach($providers as $provider => $config) {
+
+            $attributes['provider'] = $provider;
+
+            $output .= $this->templateLoginButton($attributes);
+
+        }
+
+        return $output;
+
+    }
+
     public function templateLoginButton($attributes = array()) {
 
         $attributes = shortcode_atts(array('provider' => 'Facebook'), $attributes);
@@ -1318,6 +1374,24 @@ class QikkerSocialLogin
 
         return $output;
 
+    }
+    
+    public function templateProvideEmailForm($attributes = array()) {
+        
+        $attributes = shortcode_atts(array('provider' => 'Facebook'), $attributes);
+        
+        $provider = $attributes['provider'];
+        
+        ob_start();
+        
+        include $this->locateTemplate('forms/provide-email.php');
+        
+        $output = ob_get_contents();
+        
+        ob_end_clean();
+        
+        return $output;
+        
     }
 
     public function templateProfileInfo($profileuser) {

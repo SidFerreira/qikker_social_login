@@ -7,7 +7,7 @@ class QikkerSocialLoginStyles
     static function getPath()
     {
 
-        return 'public/css/styles-1468371052338449454.css';
+        return 'public/css/styles-1468417075806924672.css';
 
     }
 
