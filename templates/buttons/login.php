@@ -4,7 +4,7 @@ if (is_user_logged_in()) {
 
     ?>
 
-    <a href="<?php echo wp_login_url($args['redirect']); ?>"
+    <a href="<?php echo QikkerSocialLogin::logoutHref($args['redirect']); ?>"
        class="qsl__button--logout qsl__provider--<?php echo $args['provider']; ?> button button-primary button-large"><?php _e('Logout'); ?></a>
 
     <?php

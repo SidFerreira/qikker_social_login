@@ -929,14 +929,14 @@ class QikkerSocialLogin
 
             }
 
-            if (!$this->isValidSocialEmail($hybridUserProfile->email)) {
+            $wp_user = $this->findUser($hybridUserProfile, $provider);
+
+            if (!$this->isValidSocialEmail($hybridUserProfile->email) && !$wp_user) {
 
                 echo $this->templateProvideEmailForm();
                 exit();
 
             }
-
-            $wp_user = $this->findUser($hybridUserProfile, $provider);
 
             if (!$wp_user && apply_filters('qikker_social_login_should_create_users', true, $hybridUserProfile)) {
 
@@ -1188,7 +1188,7 @@ class QikkerSocialLogin
 
     public static function logoutHref($redirect_to = true) {
 
-        if ($redirect_to === true) {
+        if ($redirect_to === true || $redirect_to === 'refresh_parent') {
 
             $redirect_to = self::getCurrentUrl();
 
