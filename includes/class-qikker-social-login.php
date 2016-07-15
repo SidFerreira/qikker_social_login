@@ -869,7 +869,7 @@ class QikkerSocialLogin
 
         if ($user) {
 
-            $attachment_id = get_user_meta($user->ID, 'avatar_attachment_id', true);
+            $attachment_id = get_user_meta($user->ID, self::USER_AVATAR, true);
 
             if ($attachment_id && $attacument_url = wp_get_attachment_thumb_url($attachment_id)) {
 
