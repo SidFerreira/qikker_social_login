@@ -6,7 +6,7 @@
         static function getPath()
         {
 
-            return 'public/js/custom-1468417010371142504.js';
+            return 'public/js/custom-1468575105711277184.js';
 
         }
 

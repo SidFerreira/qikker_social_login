@@ -1358,11 +1358,12 @@ class QikkerSocialLogin
 
     }
 
-    public function templateLoginButton($attributes = array()) {
+    public function templateLoginButton($args = array()) {
 
-        $attributes = shortcode_atts(array('provider' => 'Facebook'), $attributes);
-
-        $provider = $attributes['provider'];
+        $args = shortcode_atts(array(
+            'provider' => 'Facebook',
+            'redirect' => 'refresh_parent' // QikkerSocialLogin::getCurrentUrl()
+        ), $args);
 
         ob_start();
 
