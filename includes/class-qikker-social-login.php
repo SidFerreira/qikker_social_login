@@ -335,8 +335,6 @@ class QikkerSocialLogin
         $this->loader->add_filter('login_form_top', $this, 'loginFormErrors', 10, 2);
         $this->loader->add_filter('wp_login_errors', $this, 'filterLoginErrors', 10, 2);
 
-        //$errors = apply_filters( 'wp_login_errors', $errors, $redirect_to );filterLoginErrors
-
     }
 
     #endregion
@@ -460,6 +458,12 @@ class QikkerSocialLogin
     #region Actions and Filters Methods
 
     public function onWpInit() {
+
+        if (is_admin()) {
+
+            return;
+
+        }
 
         $this->getHybridAuthInstance();
 
@@ -594,7 +598,7 @@ class QikkerSocialLogin
 
                 foreach ($messages as $k => $message) {
 
-                    $error_array['errors'][$error_code][$k] = urlencode($message);
+                    $error_array['errors'][$error_code][$k] = rawurlencode($message);
 
                 }
 
@@ -998,11 +1002,45 @@ class QikkerSocialLogin
 
         }
 
+        /**
+         * Validates the USER_LOGIN based on WP_REGISTER CODE (run here to have all errors at once
+         */
+        $user_login = $values['user_login'];
+        $sanitized_user_login = sanitize_user( $user_login );
+        if ( $sanitized_user_login == '' ) {
+            $errors->add( 'empty_username', __( '<strong>ERROR</strong>: Please enter a username.' ) );
+        } elseif ( ! validate_username( $user_login ) ) {
+            $errors->add( 'invalid_username', __( '<strong>ERROR</strong>: This username is invalid because it uses illegal characters. Please enter a valid username.' ) );
+            $sanitized_user_login = '';
+        } elseif ( username_exists( $sanitized_user_login ) ) {
+            $errors->add( 'username_exists', __( '<strong>ERROR</strong>: This username is already registered. Please choose another one.' ) );
+
+        } else {
+            /** This filter is documented in wp-includes/user.php */
+            $illegal_user_logins = array_map( 'strtolower', (array) apply_filters( 'illegal_user_logins', array() ) );
+            if ( in_array( strtolower( $sanitized_user_login ), $illegal_user_logins ) ) {
+                $errors->add( 'invalid_username', __( '<strong>ERROR</strong>: Sorry, that username is not allowed.' ) );
+            }
+        }
+
+        /**
+         * Validates the USER_EMAIL based on WP_REGISTER CODE (run here to have all errors at once
+         */
+        $user_email = apply_filters( 'user_registration_email', $values['user_email'] );
+        if ( $user_email == '' ) {
+            $errors->add( 'empty_email', __( '<strong>ERROR</strong>: Please type your email address.' ) );
+        } elseif ( ! is_email( $user_email ) ) {
+            $errors->add( 'invalid_email', __( '<strong>ERROR</strong>: The email address isn&#8217;t correct.' ) );
+            $user_email = '';
+        } elseif ( email_exists( $user_email ) ) {
+            $errors->add( 'email_exists', __( '<strong>ERROR</strong>: This email is already registered, please choose another one.' ) );
+        }
+
         $error = false;
 
         if (!count($errors->get_error_codes())) {
 
-            $user_id_or_error = register_new_user($values['user_login'], $values['user_email']); //new WP_Error('algum erro');//
+            $user_id_or_error = register_new_user($user_login, $user_email); //new WP_Error('algum erro');//
 
             if (is_wp_error($user_id_or_error)) {
 
@@ -1218,7 +1256,11 @@ class QikkerSocialLogin
 
                 $severity = isset($error_data[$code]) ? $error_data[$code] : '';
 
-                foreach($error_messages as $error_message) {
+                foreach($error_messages as $k => $error_message) {
+
+                    $error_message = rawurldecode(stripslashes($error_message) );
+
+                    $error_info[$code][$k] = $error_message;
 
                     if ( 'message' == $severity )
                         $messages .= '	' . $error_message . "<br />\n";
@@ -1228,6 +1270,9 @@ class QikkerSocialLogin
                 }
 
             }
+
+            $args['error_info'] = $error_info;
+
             if ( ! empty( $errors ) ) {
 
                 $args['errors'] =  '<div id="' . $key . '_error" class="qsl__errors qsl__errors--' . $key . '">' .
@@ -1269,7 +1314,7 @@ class QikkerSocialLogin
             'id_remember'       => 'rememberme',
             'id_submit'         => 'wp-submit',
             'remember'          => false,
-            'value_username'    => 'developer5',
+            'value_username'    => '',
             // Set 'value_remember' to true to default the "Remember me" checkbox to checked.
             'value_remember'        => false,
         );
@@ -1287,6 +1332,12 @@ class QikkerSocialLogin
         if (isset($message_args['messages'])) {
 
             $args['messages'] = $message_args['messages'];
+
+        }
+
+        if (isset($message_args['error_info'])) {
+
+            $args['error_info'] = $message_args['error_info'];
 
         }
 
@@ -1327,6 +1378,8 @@ class QikkerSocialLogin
         if (isset($message_args['errors'])) { $args['errors'] = $message_args['errors']; }
 
         if (isset($message_args['messages'])) { $args['messages'] = $message_args['messages']; }
+
+        if (isset($message_args['error_info'])) { $args['error_info'] = $message_args['error_info']; }
 
         ob_start();
 
@@ -1446,3 +1499,4 @@ class QikkerSocialLogin
     #endregion
 
 }
+

@@ -58,6 +58,26 @@
                 <input type="text" name="qsl_user_provided_email" id="qsl_user_provided_email"
                        class="input qsl__input" value="" size="40" />
 
+
+                <?php if (isset($_POST['wp-submit'])) { ?>
+
+                    <div id="email_error" class="qsl__errors qsl__errors--email">
+
+                        <?php $qsl_user_provided_email = (isset($_POST['qsl_user_provided_email'])) ? $_POST['qsl_user_provided_email'] : ''; ?>
+                        <?php if (empty($qsl_user_provided_email)) { ?>
+
+                            <strong><?php _e( 'ERROR' ); ?></strong>: <?php _e( 'Please enter your ' ); echo strtolower(__('email')); ?>.
+
+                        <?php } else { ?>
+
+                            <strong><?php _e( 'ERROR' ); ?></strong>: <?php _e( 'Invalid ' ); echo strtolower(__('email')); ?>: <?php echo $qsl_user_provided_email; ?>.
+
+                        <?php } ?>
+
+                    </div>
+
+                <?php } ?>
+
             </label>
 
         </p>

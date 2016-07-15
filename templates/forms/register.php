@@ -1,24 +1,32 @@
 <?php
 
-    if (is_user_logged_in() && !get_option('users_can_register')) {
+    if (!get_option('users_can_register')) {
 
         return;
 
     }
 
-    $http_post = ('POST' == $_SERVER['REQUEST_METHOD']);
+    if (is_user_logged_in()) {
+        ?>
 
-    if (isset($args['errors'])) {
+        <a href="<?php echo QikkerSocialLogin::logoutHref($args['redirect']); ?>"
+           class="qsl__button--logout button button-primary button-large"><?php _e('Logout'); ?></a>
 
-        echo $args['errors'];
+        <?php
 
-    }
+    } else {
 
-    if (isset($args['messages'])) {
+        if (isset($args['errors'])) {
 
-        echo $args['messages'];
+            echo $args['errors'];
 
-    }
+        }
+
+        if (isset($args['messages'])) {
+
+            echo $args['messages'];
+
+        }
 
 ?>
     <form name="registerform" id="registerform"
@@ -75,3 +83,5 @@
     </form>
 
 <?php
+
+    }

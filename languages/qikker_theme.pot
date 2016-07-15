@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: qikker-wordpress-theme 1.0.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-07-15 06:31-0300\n"
+"POT-Creation-Date: 2016-07-15 11:29-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,66 +17,66 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../includes/class-qikker-social-login.php:1117
+#: ../includes/class-qikker-social-login.php:1121
 msgid "ERROR"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1118
+#: ../includes/class-qikker-social-login.php:1122
 msgid "Please enter a "
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1123
-#: ../includes/class-qikker-social-login.php:1125
-#: ../includes/class-qikker-social-login.php:1130
+#: ../includes/class-qikker-social-login.php:1127
+#: ../includes/class-qikker-social-login.php:1129
+#: ../includes/class-qikker-social-login.php:1134
 msgid "Username"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1128
+#: ../includes/class-qikker-social-login.php:1132
 msgid "Nickname"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1133
-#: ../includes/class-qikker-social-login.php:1135
+#: ../includes/class-qikker-social-login.php:1137
+#: ../includes/class-qikker-social-login.php:1139
 msgid "First name"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1138
-#: ../includes/class-qikker-social-login.php:1140
+#: ../includes/class-qikker-social-login.php:1142
+#: ../includes/class-qikker-social-login.php:1144
 msgid "Last name"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1143
-#: ../includes/class-qikker-social-login.php:1145
+#: ../includes/class-qikker-social-login.php:1147
+#: ../includes/class-qikker-social-login.php:1149
 #: ../templates/forms/provide-email.php:56
 msgid "Email"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1148
-#: ../includes/class-qikker-social-login.php:1150
+#: ../includes/class-qikker-social-login.php:1152
+#: ../includes/class-qikker-social-login.php:1154
 msgid "Pet's name"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1263
+#: ../includes/class-qikker-social-login.php:1269
 msgid "Username or Email"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1264
+#: ../includes/class-qikker-social-login.php:1270
 msgid "Password"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1265
+#: ../includes/class-qikker-social-login.php:1271
 msgid "Remember Me"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1266
+#: ../includes/class-qikker-social-login.php:1272
 msgid "Log In"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1319
+#: ../includes/class-qikker-social-login.php:1325
 msgid "Register"
 msgstr ""
 
-#: ../templates/buttons/login.php:8
+#: ../templates/buttons/login.php:8 ../templates/forms/register.php:13
 msgid "Logout"
 msgstr ""
 
@@ -96,6 +96,6 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: ../templates/forms/register.php:61
+#: ../templates/forms/register.php:71
 msgid "Registration confirmation will be emailed to you."
 msgstr ""
