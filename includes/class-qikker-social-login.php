@@ -333,7 +333,7 @@ class QikkerSocialLogin
 
         $this->loader->add_filter('get_avatar_url', $this, 'getAvatarUrl', 10, 3);
         $this->loader->add_filter('login_form_top', $this, 'loginFormErrors', 10, 2);
-        $this->loader->add_filter('wp_login_errors', $this, 'filterLoginErrors', 10, 2);
+        $this->loader->add_filter('wp_login_errors', $this, 'filterErrors', 10, 1);
 
     }
 
@@ -423,7 +423,19 @@ class QikkerSocialLogin
                     "enabled" => true,
                     "keys" => array("id" => "289669238047330", "secret" => "0d8414a87a389b04231ff89f8cf81fec"),
                     "trustForwarded" => false,
-                    "scope" => "email, user_about_me, user_birthday, user_hometown, user_website, user_friends, user_photos, user_likes",
+                    "scope" => "email, user_about_me",
+                    "display" => "popup"
+                )
+            );
+
+        } else if (strpos(site_url(), 'electronicfamily.qikkerlocal.nl') || strpos(site_url(), 'electronicfamily.qikkeroffline.nl')) {
+
+            $base_config = array(
+                "Facebook" => array(
+                    "enabled" => true,
+                    "keys" => array("id" => "286161255064795", "secret" => "62cc7a18351b7223f3258995b0fa0acc"),
+                    "trustForwarded" => false,
+                    "scope" => "email, user_about_me",
                     "display" => "popup"
                 )
             );
@@ -435,16 +447,21 @@ class QikkerSocialLogin
                     "enabled" => true,
                     "keys" => array("id" => "288424601505127", "secret" => "4a0bb2de87d206ac55d4cc84ada7f07b"),
                     "trustForwarded" => false,
-                    "scope" => "email, user_about_me, user_birthday, user_hometown, user_website, user_friends, user_photos, user_likes",
+                    "scope" => "email, user_about_me",
                     "display" => "popup"
-                ),
-
-                "Twitter" => array(
-                    "enabled" => true,
-                    "keys" => array("key" => "jwfrRd760m6WVvxsDrGz63MY9", "secret" => "cSjyqs3qM2KriaC1Ma1moqTmVKFQfTFv2ODbiWTp1kY9fob4jx"),
-                    "includeEmail" => true
                 )
+            );
 
+        } else if (strpos(site_url(), 'electronicfamily.nl')) {
+
+            $base_config = array(
+                "Facebook" => array(
+                    "enabled" => true,
+                    "keys" => array("id" => "1779821172231348", "secret" => "837102dbd9ea3e5dc8a01158cf980d9d"),
+                    "trustForwarded" => false,
+                    "scope" => "email, user_about_me",
+                    "display" => "popup"
+                )
             );
 
         }
@@ -510,7 +527,7 @@ class QikkerSocialLogin
 
             } else if (isset($_GET['action'])) {
 
-                if ($_GET['action'] === self::ACTION_LOGIN) {
+                if ($_GET['action'] === self::ACTION_LOGIN && !isset($_GET[self::PLUGIN_INITIALS . '_register_error'])) {
 
                     if (wp_verify_nonce($_REQUEST[self::NONCE_LOGIN], self::NONCE_LOGIN)) {
 
@@ -586,11 +603,16 @@ class QikkerSocialLogin
     }
 
 
-    function filterLoginErrors( $errors ) {
+    function filterErrors( $errors, $process = 'login', $redirect_to = false) {
 
         if ( is_wp_error($errors) && !isset($_GET['reauth'])) {
 
-            $referrer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();  // where did the post submission come from?
+            if (!$redirect_to) {
+
+                $redirect_to = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
+                // where did the post submission come from?
+
+            }
 
             $error_array = (array) $errors;
 
@@ -606,11 +628,12 @@ class QikkerSocialLogin
 
             $login_url = wp_login_url();
 
-            if ( !empty($referrer) && (strpos($referrer, $login_url) !== 0) && !strstr($referrer,'wp-admin') ) {
+            if ( !empty($redirect_to) && (strpos($redirect_to, $login_url) !== 0) && !strstr($redirect_to,'wp-admin') ) {
 
-                $referrer = add_query_arg(array(self::PLUGIN_INITIALS . '_login_error' => $error_array), $referrer);
-
-                wp_redirect( $referrer );  // let's append some information (login=failed) to the URL for the theme to use
+                $redirect_to = add_query_arg('has_errors', $process, $redirect_to);
+                $redirect_to = add_query_arg(array(self::PLUGIN_INITIALS . '_' . $process . '_error' => $error_array), $redirect_to);
+                
+                wp_redirect( $redirect_to );  // let's append some information (login=failed) to the URL for the theme to use
                 exit;
 
             }
@@ -994,6 +1017,12 @@ class QikkerSocialLogin
 
             $values[$field] = isset($_POST[$field]) ? $_POST[$field] : '';
 
+            if ($field == 'user_login' || $field === 'user_email') {
+
+                continue;
+
+            }
+
             if (isset($config['required']) && $config['required'] && empty($values[$field])) {
 
                 $errors->add( 'empty_' . $field, $config['required_error']);
@@ -1074,7 +1103,7 @@ class QikkerSocialLogin
 
         if ($error) {
 
-            $_GET[self::PLUGIN_INITIALS . '_register_error'] = (array) $error;
+            $this->filterErrors($errors, 'register', $_SERVER['REQUEST_URI']);
 
         }
 
@@ -1164,7 +1193,7 @@ class QikkerSocialLogin
             ),
             'user_nicename' => array(
                 'label'    => __('Nickname'),
-                'required' => true,
+                'required' => false,
                 'required_error' => $error_label . $please_enter_a . strtolower(__('Username')) . '.'
             ),
             'first_name' => array(
@@ -1174,18 +1203,13 @@ class QikkerSocialLogin
             ),
             'last_name' => array(
                 'label'    => __('Last name'),
-                'required' => true,
+                'required' => false,
                 'required_error' => $error_label . $please_enter_a . strtolower(__('Last name')) . '.'
             ),
             'user_email' => array(
                 'label'    => __('Email'),
                 'required' => true,
                 'required_error' => $error_label . $please_enter_a . strtolower(__('Email')) . '.'
-            ),
-            'pets_name' => array(
-                'label'    => __('Pet\'s name'),
-                'required' => true,
-                'required_error' => $error_label . $please_enter_a . strtolower(__('Pet\'s name')) . '.'
             )
 
         ));

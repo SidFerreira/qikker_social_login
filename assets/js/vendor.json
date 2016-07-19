@@ -1,7 +1,3 @@
 [
-   "<%= assetPath %>/js/vendor/modernizr/_modernizr.js",
-   "<%= assetPath %>/js/vendor/picturefill/_picturefill.js",
-   "<%= assetPath %>/js/vendor/jquery/_jquery.js",
-   "<%= assetPath %>/js/vendor/jquery/jquery.browser.js",
-   "<%= assetPath %>/js/vendor/_qikker/browserhacks.js"
+   "<%= assetPath %>/js/vendor/jquery/_jquery.js"
 ]

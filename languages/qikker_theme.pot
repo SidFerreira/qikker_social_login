@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: qikker-wordpress-theme 1.0.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-07-15 11:29-0300\n"
+"POT-Creation-Date: 2016-07-19 10:01-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,62 +17,93 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../includes/class-qikker-social-login.php:1121
+#: ../includes/class-qikker-social-login.php:1040
+msgid "<strong>ERROR</strong>: Please enter a username."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1042
+msgid ""
+"<strong>ERROR</strong>: This username is invalid because it uses illegal "
+"characters. Please enter a valid username."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1045
+msgid ""
+"<strong>ERROR</strong>: This username is already registered. Please choose "
+"another one."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1051
+msgid "<strong>ERROR</strong>: Sorry, that username is not allowed."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1060
+msgid "<strong>ERROR</strong>: Please type your email address."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1062
+msgid "<strong>ERROR</strong>: The email address isn&#8217;t correct."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1065
+msgid ""
+"<strong>ERROR</strong>: This email is already registered, please choose "
+"another one."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1184
+#: ../templates/forms/provide-email.php:69
+#: ../templates/forms/provide-email.php:73
 msgid "ERROR"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1122
+#: ../includes/class-qikker-social-login.php:1185
 msgid "Please enter a "
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1127
-#: ../includes/class-qikker-social-login.php:1129
-#: ../includes/class-qikker-social-login.php:1134
+#: ../includes/class-qikker-social-login.php:1190
+#: ../includes/class-qikker-social-login.php:1192
+#: ../includes/class-qikker-social-login.php:1197
 msgid "Username"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1132
+#: ../includes/class-qikker-social-login.php:1195
 msgid "Nickname"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1137
-#: ../includes/class-qikker-social-login.php:1139
+#: ../includes/class-qikker-social-login.php:1200
+#: ../includes/class-qikker-social-login.php:1202
 msgid "First name"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1142
-#: ../includes/class-qikker-social-login.php:1144
+#: ../includes/class-qikker-social-login.php:1205
+#: ../includes/class-qikker-social-login.php:1207
 msgid "Last name"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1147
-#: ../includes/class-qikker-social-login.php:1149
+#: ../includes/class-qikker-social-login.php:1210
+#: ../includes/class-qikker-social-login.php:1212
 #: ../templates/forms/provide-email.php:56
 msgid "Email"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1152
-#: ../includes/class-qikker-social-login.php:1154
-msgid "Pet's name"
-msgstr ""
-
-#: ../includes/class-qikker-social-login.php:1269
+#: ../includes/class-qikker-social-login.php:1332
 msgid "Username or Email"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1270
+#: ../includes/class-qikker-social-login.php:1333
 msgid "Password"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1271
+#: ../includes/class-qikker-social-login.php:1334
 msgid "Remember Me"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1272
+#: ../includes/class-qikker-social-login.php:1335
 msgid "Log In"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1325
+#: ../includes/class-qikker-social-login.php:1394
 msgid "Register"
 msgstr ""
 
@@ -92,10 +123,23 @@ msgstr ""
 msgid "Invalid domains"
 msgstr ""
 
-#: ../templates/forms/provide-email.php:71
+#: ../templates/forms/provide-email.php:69
+msgid "Please enter your "
+msgstr ""
+
+#: ../templates/forms/provide-email.php:69
+#: ../templates/forms/provide-email.php:73
+msgid "email"
+msgstr ""
+
+#: ../templates/forms/provide-email.php:73
+msgid "Invalid "
+msgstr ""
+
+#: ../templates/forms/provide-email.php:91
 msgid "Save"
 msgstr ""
 
-#: ../templates/forms/register.php:71
+#: ../templates/forms/register.php:69
 msgid "Registration confirmation will be emailed to you."
 msgstr ""
