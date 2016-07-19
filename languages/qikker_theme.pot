@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: qikker-wordpress-theme 1.0.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-07-19 10:01-0300\n"
+"POT-Creation-Date: 2016-07-19 11:56-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,93 +17,93 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../includes/class-qikker-social-login.php:1040
-msgid "<strong>ERROR</strong>: Please enter a username."
-msgstr ""
-
-#: ../includes/class-qikker-social-login.php:1042
-msgid ""
-"<strong>ERROR</strong>: This username is invalid because it uses illegal "
-"characters. Please enter a valid username."
-msgstr ""
-
-#: ../includes/class-qikker-social-login.php:1045
-msgid ""
-"<strong>ERROR</strong>: This username is already registered. Please choose "
-"another one."
-msgstr ""
-
-#: ../includes/class-qikker-social-login.php:1051
-msgid "<strong>ERROR</strong>: Sorry, that username is not allowed."
-msgstr ""
-
-#: ../includes/class-qikker-social-login.php:1060
+#: ../includes/class-qikker-social-login.php:1044
 msgid "<strong>ERROR</strong>: Please type your email address."
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1062
+#: ../includes/class-qikker-social-login.php:1046
 msgid "<strong>ERROR</strong>: The email address isn&#8217;t correct."
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1065
+#: ../includes/class-qikker-social-login.php:1049
 msgid ""
 "<strong>ERROR</strong>: This email is already registered, please choose "
 "another one."
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1184
+#: ../includes/class-qikker-social-login.php:1061
+msgid "<strong>ERROR</strong>: Please enter a username."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1063
+msgid ""
+"<strong>ERROR</strong>: This username is invalid because it uses illegal "
+"characters. Please enter a valid username."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1066
+msgid ""
+"<strong>ERROR</strong>: This username is already registered. Please choose "
+"another one."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1072
+msgid "<strong>ERROR</strong>: Sorry, that username is not allowed."
+msgstr ""
+
+#: ../includes/class-qikker-social-login.php:1200
 #: ../templates/forms/provide-email.php:69
 #: ../templates/forms/provide-email.php:73
 msgid "ERROR"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1185
+#: ../includes/class-qikker-social-login.php:1201
 msgid "Please enter a "
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1190
-#: ../includes/class-qikker-social-login.php:1192
-#: ../includes/class-qikker-social-login.php:1197
+#: ../includes/class-qikker-social-login.php:1206
+#: ../includes/class-qikker-social-login.php:1208
+#: ../includes/class-qikker-social-login.php:1213
 msgid "Username"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1195
+#: ../includes/class-qikker-social-login.php:1211
 msgid "Nickname"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1200
-#: ../includes/class-qikker-social-login.php:1202
+#: ../includes/class-qikker-social-login.php:1216
+#: ../includes/class-qikker-social-login.php:1218
 msgid "First name"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1205
-#: ../includes/class-qikker-social-login.php:1207
+#: ../includes/class-qikker-social-login.php:1221
+#: ../includes/class-qikker-social-login.php:1223
 msgid "Last name"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1210
-#: ../includes/class-qikker-social-login.php:1212
+#: ../includes/class-qikker-social-login.php:1226
+#: ../includes/class-qikker-social-login.php:1228
 #: ../templates/forms/provide-email.php:56
 msgid "Email"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1332
+#: ../includes/class-qikker-social-login.php:1348
 msgid "Username or Email"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1333
+#: ../includes/class-qikker-social-login.php:1349
 msgid "Password"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1334
+#: ../includes/class-qikker-social-login.php:1350
 msgid "Remember Me"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1335
+#: ../includes/class-qikker-social-login.php:1351
 msgid "Log In"
 msgstr ""
 
-#: ../includes/class-qikker-social-login.php:1394
+#: ../includes/class-qikker-social-login.php:1410
 msgid "Register"
 msgstr ""
 

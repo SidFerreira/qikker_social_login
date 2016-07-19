@@ -76,7 +76,7 @@ class QikkerSocialLoginPublic
          * class.
          */
 
-        if (!add_filter($this->plugin_name . '_should_enqueue_styles', true)) {
+        if (!apply_filters($this->plugin_name . '_should_enqueue_styles', true)) {
 
             return;
 
@@ -117,7 +117,7 @@ class QikkerSocialLoginPublic
          * class.
          */
 
-        if (!add_filter($this->plugin_name . '_should_enqueue_scripts', true)) {
+        if (!apply_filters($this->plugin_name . '_should_enqueue_scripts', true)) {
 
             return;
 
