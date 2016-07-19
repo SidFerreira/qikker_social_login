@@ -632,7 +632,7 @@ class QikkerSocialLogin
 
                 $redirect_to = add_query_arg('has_errors', $process, $redirect_to);
                 $redirect_to = add_query_arg(array(self::PLUGIN_INITIALS . '_' . $process . '_error' => $error_array), $redirect_to);
-                
+
                 wp_redirect( $redirect_to );  // let's append some information (login=failed) to the URL for the theme to use
                 exit;
 
@@ -1034,6 +1034,27 @@ class QikkerSocialLogin
         /**
          * Validates the USER_LOGIN based on WP_REGISTER CODE (run here to have all errors at once
          */
+
+
+        /**
+         * Validates the USER_EMAIL based on WP_REGISTER CODE (run here to have all errors at once
+         */
+        $user_email = apply_filters( 'user_registration_email', $values['user_email'] );
+        if ( $user_email == '' ) {
+            $errors->add( 'empty_email', __( '<strong>ERROR</strong>: Please type your email address.' ) );
+        } elseif ( ! is_email( $user_email ) ) {
+            $errors->add( 'invalid_email', __( '<strong>ERROR</strong>: The email address isn&#8217;t correct.' ) );
+            $user_email = '';
+        } elseif ( email_exists( $user_email ) ) {
+            $errors->add( 'email_exists', __( '<strong>ERROR</strong>: This email is already registered, please choose another one.' ) );
+        }
+
+        if ((!isset($values['user_login']) || empty($values['user_login'])) && $user_email) {
+
+            $values['user_login'] = $this->getUsernameFromEmail($user_email);
+
+        }
+
         $user_login = $values['user_login'];
         $sanitized_user_login = sanitize_user( $user_login );
         if ( $sanitized_user_login == '' ) {
@@ -1050,19 +1071,6 @@ class QikkerSocialLogin
             if ( in_array( strtolower( $sanitized_user_login ), $illegal_user_logins ) ) {
                 $errors->add( 'invalid_username', __( '<strong>ERROR</strong>: Sorry, that username is not allowed.' ) );
             }
-        }
-
-        /**
-         * Validates the USER_EMAIL based on WP_REGISTER CODE (run here to have all errors at once
-         */
-        $user_email = apply_filters( 'user_registration_email', $values['user_email'] );
-        if ( $user_email == '' ) {
-            $errors->add( 'empty_email', __( '<strong>ERROR</strong>: Please type your email address.' ) );
-        } elseif ( ! is_email( $user_email ) ) {
-            $errors->add( 'invalid_email', __( '<strong>ERROR</strong>: The email address isn&#8217;t correct.' ) );
-            $user_email = '';
-        } elseif ( email_exists( $user_email ) ) {
-            $errors->add( 'email_exists', __( '<strong>ERROR</strong>: This email is already registered, please choose another one.' ) );
         }
 
         $error = false;
@@ -1128,6 +1136,30 @@ class QikkerSocialLogin
 
     }
 
+    public function getUsernameFromEmail($email) {
+
+        $username = substr($email, 0, strpos($email, '@') );
+
+        if( username_exists( $username ) ) {
+
+            $try = 0;
+
+            $tmp_username = null;
+
+            do {
+
+                $tmp_username = $username . "_" . ($try++);
+
+            } while( username_exists ($tmp_username) );
+
+            $username = $tmp_username;
+
+        }
+
+        return $username;
+
+    }
+
     /**
      * @param $hybridUserProfile Hybrid_User_Profile
      * @param $provider String
@@ -1137,23 +1169,7 @@ class QikkerSocialLogin
 
         $email = $hybridUserProfile->email;
 
-        $username = substr($email, 0, strpos($email, '@') );
-
-        if( username_exists( $username ) ) {
-
-            $try = 0;
-
-            $tmp_username = $username . "_" . ($try++);
-
-            while( username_exists ($tmp_username) ) {
-
-                $tmp_username = $username . "_" . ($try++);
-
-            }
-
-            $username = $tmp_username;
-
-        }
+        $username = $this->getUsernameFromEmail($email);
 
         $user_id_or_error = register_new_user($username, $email); //new WP_Error('algum erro');//
 
@@ -1188,7 +1204,7 @@ class QikkerSocialLogin
 
             'user_login' => array(
                 'label'    => __('Username'),
-                'required' => true,
+                'required' => false,
                 'required_error' => $error_label . $please_enter_a . strtolower(__('Username')) . '.'
             ),
             'user_nicename' => array(
