@@ -36,25 +36,30 @@
 
         <?php foreach($args['fields'] as $field => $config) { $value = isset($_POST[$field]) ? $_POST[$field] : ''; ?>
 
-            <p>
+            <?php do_action(QikkerSocialLogin::ACTION_BEFORE_REGISTER_FIELD, true, $field, $config); ?>
+            <?php if (apply_filters(QikkerSocialLogin::FILTER_SHOW_REGISTER_FIELD, true, $field, $config)) { ?>
 
-                <label for="<?=$field;?>">
+                <p>
 
-                    <?php echo $config['label'] ?>
+                    <label for="<?=$field;?>">
 
-                    <?php if(isset($config['required']) && $config['required']) { ?>
+                        <?php echo $config['label'] ?>
 
-                        <span class="qsl__required">*</span>
+                        <?php if(isset($config['required']) && $config['required']) { ?>
 
-                    <?php } ?>
+                            <span class="qsl__required">*</span>
 
-                    <br />
-                    <input type="text" name="<?=$field;?>" id="<?=$field;?>"
-                           class="input qsl__input" value="<?php echo esc_attr(wp_unslash($value)); ?>" size="40" />
+                        <?php } ?>
 
-                </label>
+                        <br />
+                        <input type="<?php echo $config['type'] ?>" name="<?=$field;?>" id="<?=$field;?>"
+                               class="input qsl__input" value="<?php echo esc_attr(wp_unslash($value)); ?>" size="40" />
 
-            </p>
+                    </label>
+
+                </p>
+
+            <?php } ?>
 
         <?php } ?>
 

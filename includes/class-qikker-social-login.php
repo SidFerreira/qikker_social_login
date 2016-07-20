@@ -53,6 +53,20 @@ class QikkerSocialLogin
 
     const USER_PROVIDED_EMAIL   = 'qsl_user_provided_email';
 
+    const ACTION_BEFORE_LOGIN_FIELD             = 'qsl_before_login_field';
+
+    const ACTION_BEFORE_REGISTER_FIELD          = 'qsl_before_register_field';
+
+    const FILTER_SHOW_LOGIN_FIELD               = 'qsl_show_login_field';
+
+    const FILTER_SHOW_REGISTER_FIELD            = 'qsl_show_register_field';
+
+    const FILTER_FORMAT_FORM_MESSAGE            = 'qsl_format_form_message';
+
+    const FILTER_FORMAT_FORM_ERROR              = 'qsl_format_form_error';
+
+    const FILTER_SET_REGISTER_FIELDS            = 'qsl_register_fields';
+
 
     /**
      * "Singleton"
@@ -336,6 +350,7 @@ class QikkerSocialLogin
         $this->loader->add_filter('get_avatar_url', $this, 'getAvatarUrl', 10, 3);
         $this->loader->add_filter('login_form_top', $this, 'loginFormErrors', 10, 2);
         $this->loader->add_filter('wp_login_errors', $this, 'filterErrors', 10, 1);
+        $this->loader->add_filter('authenticate',   $this, 'ensureLoginErrors', 30, 3);
 
     }
 
@@ -641,7 +656,11 @@ class QikkerSocialLogin
 
     }
 
-
+    /**
+     * @param $errors WP_Error
+     * @param string $process
+     * @param bool $redirect_to
+     */
     function filterErrors( $errors, $process = 'login', $redirect_to = false) {
 
         if ( is_wp_error($errors) && !isset($_GET['reauth'])) {
@@ -650,6 +669,21 @@ class QikkerSocialLogin
 
                 $redirect_to = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
                 // where did the post submission come from?
+
+            }
+
+            if ($process === 'login') {
+
+                if (isset($errors->errors['invalid_username']) || isset($errors->errors['incorrect_password'])) {
+
+                    unset($errors->errors['invalid_username']);
+                    unset($errors->errors['incorrect_password']);
+
+                    $errors->add('authentication_failed',
+                        __( '<strong>ERROR</strong>: Invalid username, email address or incorrect password.')
+                        . ' <a target="blank" href="' . wp_lostpassword_url() . '">' . __( 'Lost your password?' ) . '</a>');
+
+                };
 
             }
 
@@ -755,6 +789,48 @@ class QikkerSocialLogin
 
         $userdata->to_array();
 
+        if (!isset($user_fields['first_name']) || empty($user_fields['first_name'])) {
+
+            if (isset($user_fields['firstName']) && !empty($user_fields['firstName'])) {
+
+                $user_fields['first_name'] = $user_fields['firstName'];
+
+            } else {
+
+                $user_fields['first_name'] = $user_fields->username;
+
+            }
+
+        }
+
+        if (!isset($user_fields['last_name']) || empty($user_fields['last_name'])) {
+
+            if (isset($user_fields['lastName']) && !empty($user_fields['lastName'])) {
+
+                $user_fields['last_name'] = $user_fields['lastName'];
+
+            } else {
+
+                $user_fields['last_name'] = '';
+
+            }
+
+        }
+
+        if (!isset($user_fields['nickname']) || empty($user_fields['nickname'])) {
+
+            if (isset($user_fields['displayName']) && !empty($user_fields['displayName'])) {
+
+                $user_fields['nickname'] = $user_fields['displayName'];
+
+            } else {
+
+                $user_fields['nickname'] = trim($user_fields['first_name'] . ' ' . $user_fields['last_name']);
+
+            }
+
+        }
+
         foreach($user_fields as $field => $value) {
 
             if (in_array($field, $default_fields)) {
@@ -768,6 +844,9 @@ class QikkerSocialLogin
             }
 
         }
+
+        $userdata->user_nicename = $userdata->nickname;
+        $userdata->display_name = $userdata->nickname;
 
         wp_update_user($userdata);
 
@@ -967,6 +1046,32 @@ class QikkerSocialLogin
 
     }
 
+    /**
+     * @param $user WP_Error|WP_User
+     */
+    public function ensureLoginErrors($user, $username, $password) {
+        //wp_authenticate_username_password()
+
+        if( is_wp_error($user) ) {
+
+            $error_codes = $user->get_error_codes();
+
+            if ($error_codes == array('empty_username', 'empty_password') && count($error_codes) === 2) {
+
+                unset($user->errors['empty_username']);
+                unset($user->errors['empty_password']);
+
+
+                $user->add('empty_auth',
+                    __( '<strong>ERROR</strong>: The username and password fields are empty.'));
+
+            }
+
+        }
+
+        return $user;
+    }
+
     public function authenticate($provider) {
 
         if (is_user_logged_in()) {
@@ -1049,7 +1154,7 @@ class QikkerSocialLogin
 
         $fields = self::getRegisterFields();
 
-        $values = array();
+        $values = array('user_login' => '', 'user_email' => '');
 
         //Required Fields Validation
         foreach($fields as $field => $config) {
@@ -1070,10 +1175,6 @@ class QikkerSocialLogin
 
         }
 
-        /**
-         * Validates the USER_LOGIN based on WP_REGISTER CODE (run here to have all errors at once
-         */
-
 
         /**
          * Validates the USER_EMAIL based on WP_REGISTER CODE (run here to have all errors at once
@@ -1088,31 +1189,41 @@ class QikkerSocialLogin
             $errors->add( 'email_exists', __( '<strong>ERROR</strong>: This email is already registered, please choose another one.' ) );
         }
 
-        if ((!isset($values['user_login']) || empty($values['user_login'])) && $user_email) {
 
-            $values['user_login'] = $this->getUsernameFromEmail($user_email);
-
-        }
+        /**
+         * Validates the USER_LOGIN based on WP_REGISTER CODE (run here to have all errors at once
+         */
 
         $user_login = $values['user_login'];
-        $sanitized_user_login = sanitize_user( $user_login );
-        if ( $sanitized_user_login == '' ) {
-            $errors->add( 'empty_username', __( '<strong>ERROR</strong>: Please enter a username.' ) );
-        } elseif ( ! validate_username( $user_login ) ) {
-            $errors->add( 'invalid_username', __( '<strong>ERROR</strong>: This username is invalid because it uses illegal characters. Please enter a valid username.' ) );
-            $sanitized_user_login = '';
-        } elseif ( username_exists( $sanitized_user_login ) ) {
-            $errors->add( 'username_exists', __( '<strong>ERROR</strong>: This username is already registered. Please choose another one.' ) );
 
-        } else {
-            /** This filter is documented in wp-includes/user.php */
-            $illegal_user_logins = array_map( 'strtolower', (array) apply_filters( 'illegal_user_logins', array() ) );
-            if ( in_array( strtolower( $sanitized_user_login ), $illegal_user_logins ) ) {
-                $errors->add( 'invalid_username', __( '<strong>ERROR</strong>: Sorry, that username is not allowed.' ) );
-            }
+        if (empty($user_login) && $user_email) {
+
+            $user_login = $values['user_login'] = $this->getUsernameFromEmail($user_email);
+
         }
 
-        $error = false;
+        if (empty($values['user_login']) && isset($fields['user_login'])) {
+
+            $sanitized_user_login = sanitize_user( $user_login );
+            if ( $sanitized_user_login == '' ) {
+                $errors->add( 'empty_username', __( '<strong>ERROR</strong>: Please enter a username.' ) );
+            } elseif ( ! validate_username( $user_login ) ) {
+                $errors->add( 'invalid_username', __( '<strong>ERROR</strong>: This username is invalid because it uses illegal characters. Please enter a valid username.' ) );
+                $sanitized_user_login = '';
+            } elseif ( username_exists( $sanitized_user_login ) ) {
+                $errors->add( 'username_exists', __( '<strong>ERROR</strong>: This username is already registered. Please choose another one.' ) );
+
+            } else {
+                /** This filter is documented in wp-includes/user.php */
+                $illegal_user_logins = array_map( 'strtolower', (array) apply_filters( 'illegal_user_logins', array() ) );
+                if ( in_array( strtolower( $sanitized_user_login ), $illegal_user_logins ) ) {
+                    $errors->add( 'invalid_username', __( '<strong>ERROR</strong>: Sorry, that username is not allowed.' ) );
+                }
+            }
+
+        }
+
+        $error = null;
 
         if (!count($errors->get_error_codes())) {
 
@@ -1179,9 +1290,11 @@ class QikkerSocialLogin
 
         $username = substr($email, 0, strpos($email, '@') );
 
+        $username = preg_replace( '|[^a-z0-9 _.\-@]|i', '', $username);
+
         if( username_exists( $username ) ) {
 
-            $try = 0;
+            $try = 1;
 
             $tmp_username = null;
 
@@ -1225,7 +1338,9 @@ class QikkerSocialLogin
 
             $this->assignAuthInformation($user_id_or_error, $provider, $hybridUserProfile);
 
-            $this->setupUserData($user_id_or_error,  (array) $hybridUserProfile);
+            $hybrid_user_profile = (array) $hybridUserProfile;
+            $hybrid_user_profile['username'] = $username;
+            $this->setupUserData($user_id_or_error, $hybrid_user_profile );
             $this->setupUserAvatar($user_id_or_error, $hybridUserProfile);
 
             return new WP_User($user_id_or_error);
@@ -1239,31 +1354,36 @@ class QikkerSocialLogin
         $error_label = '<strong>' . __( 'ERROR' ) . '</strong>: ';
         $please_enter_a = __( 'Please enter a ' );
 
-        $fields = apply_filters(self::PLUGIN_INITIALS . '_register_fields', array(
+            $fields = apply_filters(self::FILTER_SET_REGISTER_FIELDS, array(
 
             'user_login' => array(
                 'label'    => __('Username'),
                 'required' => false,
+                'type'     => 'text',
                 'required_error' => $error_label . $please_enter_a . strtolower(__('Username')) . '.'
             ),
-            'user_nicename' => array(
+            'nickname' => array(
                 'label'    => __('Nickname'),
                 'required' => false,
-                'required_error' => $error_label . $please_enter_a . strtolower(__('Username')) . '.'
+                'type'     => 'text',
+                'required_error' => $error_label . $please_enter_a . strtolower(__('Nickname')) . '.'
             ),
             'first_name' => array(
                 'label'    => __('First name'),
                 'required' => true,
+                'type'     => 'text',
                 'required_error' => $error_label . $please_enter_a .  strtolower(__('First name')) . '.'
             ),
             'last_name' => array(
                 'label'    => __('Last name'),
                 'required' => false,
+                'type'     => 'text',
                 'required_error' => $error_label . $please_enter_a . strtolower(__('Last name')) . '.'
             ),
             'user_email' => array(
                 'label'    => __('Email'),
                 'required' => true,
+                'type'     => 'email',
                 'required_error' => $error_label . $please_enter_a . strtolower(__('Email')) . '.'
             )
 
@@ -1337,14 +1457,14 @@ class QikkerSocialLogin
 
                 foreach($error_messages as $k => $error_message) {
 
-                    $error_message = rawurldecode(stripslashes($error_message) );
+                    $error_message_encoded = rawurldecode(stripslashes($error_message) );
 
                     $error_info[$code][$k] = $error_message;
 
                     if ( 'message' == $severity )
-                        $messages .= '	' . $error_message . "<br />\n";
+                        $messages .= apply_filters(self::FILTER_FORMAT_FORM_MESSAGE, '<div>' . $error_message_encoded . '</div>', $error_message_encoded, $error_message, $code);
                     else
-                        $errors .= '	' . $error_message . "<br />\n";
+                        $errors     .= apply_filters(self::FILTER_FORMAT_FORM_ERROR, '<div>' . $error_message_encoded . '</div>', $error_message_encoded, $error_message, $code);
 
                 }
 
@@ -1419,6 +1539,8 @@ class QikkerSocialLogin
             $args['error_info'] = $message_args['error_info'];
 
         }
+
+        add_filter('login_form_bottom', array($this, 'getSocialLoginBottom'));
 
         ob_start();
 
