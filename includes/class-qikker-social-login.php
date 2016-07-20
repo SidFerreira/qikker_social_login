@@ -32,21 +32,23 @@ class QikkerSocialLogin
 
     #region Constants and Singletons
 
-    const PLUGIN_NAME       = 'qikker-social-login';
+    const PLUGIN_NAME           = 'qikker-social-login';
 
-    const PLUGIN_INITIALS   = 'qsl';
+    const PLUGIN_INITIALS       = 'qsl';
 
-    const ACTION_AUTH       = 'qsl-do-social-auth';
+    const ACTION_AUTH           = 'qsl-do-social-auth';
 
     const ACTION_AUTH_FAILED    = 'qsl-do-social-auth-failed';
 
-    const ACTION_LOGIN      = 'qsl-do-social-login';
+    const ACTION_LOGIN          = 'qsl-do-social-login';
 
-    const ACTION_LOGOUT     = 'qsl-do-social-logout';
+    const ACTION_LOGOUT         = 'qsl-do-social-logout';
 
-    const NONCE_AUTH        = 'qsl_auth';
+    const ACTION_PROFILE        = 'qsl-do-profile';
 
-    const NONCE_LOGIN       = 'qsl_login';
+    const NONCE_AUTH            = 'qsl_auth';
+
+    const NONCE_LOGIN           = 'qsl_login';
 
     /* Same pattern as ACF */
     const USER_AVATAR       = 'user_avatar';
@@ -310,8 +312,13 @@ class QikkerSocialLogin
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueueScripts');
 
         $this->loader->add_action('init', $this, 'onWpInit', 10, 3);
-        $this->loader->add_action('show_user_profile', $this, 'templateProfileInfo');
-        $this->loader->add_action('edit_user_profile', $this, 'templateProfileInfo');
+
+        if (is_admin()) {
+
+            $this->loader->add_action('show_user_profile', $this, 'templateProfileInfo');
+            $this->loader->add_action('edit_user_profile', $this, 'templateProfileInfo');
+
+        }
 
         $this->loader->add_action('wp_logout', $this, 'logoutHook');
         $this->loader->add_action('wp_login', $this, 'loginHook');
@@ -327,13 +334,20 @@ class QikkerSocialLogin
      */
     private function defineShortcodes() {
 
-        add_shortcode('qikker_social_login_form', array($this, 'templateLoginForm'));
+        add_shortcode('qsl_login_form',             array($this, 'templateLoginForm'));
+        add_shortcode('qikker_social_login_form',   array($this, 'templateLoginForm'));
 
-        add_shortcode('qikker_social_register_form', array($this, 'templateRegisterForm'));
+        add_shortcode('qsl_register_form',              array($this, 'templateRegisterForm'));
+        add_shortcode('qikker_social_register_form',    array($this, 'templateRegisterForm'));
 
+        add_shortcode('qsl_profile_form',              array($this, 'templateProfileForm'));
+        add_shortcode('qikker_social_profile_form',    array($this, 'templateProfileForm'));
+
+        add_shortcode('qsl_login_button',           array($this, 'templateLoginButton'));
         add_shortcode('qikker_social_login_button', array($this, 'templateLoginButton'));
 
-        add_shortcode('qikker_social_login_buttons', array($this, 'templateLoginButtons'));
+        add_shortcode('qsl_login_buttons',              array($this, 'templateLoginButtons'));
+        add_shortcode('qikker_social_login_buttons',    array($this, 'templateLoginButtons'));
 
     }
 
@@ -546,7 +560,15 @@ class QikkerSocialLogin
 
         if (is_user_logged_in()) {
 
-            $this->updateProfiles();
+            $this->updateSocialProfiles();
+
+            if (isset($_REQUEST['action']) && $_REQUEST['action'] === self::ACTION_PROFILE) {
+
+                $this->update();
+
+                $this->processRedirection();
+
+            }
 
         }
 
@@ -555,7 +577,7 @@ class QikkerSocialLogin
 
     public function processRedirection() {
 
-        $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : false;
+        $redirect_to = isset($_REQUEST['redirect_to']) ? $_REQUEST['redirect_to'] : false;
 
         if ($redirect_to) {
 
@@ -580,7 +602,7 @@ class QikkerSocialLogin
 
                     }
 
-                    redirect_url += 'has_errors=social&provider=<?php echo $_GET['provider']; ?>';
+                    redirect_url += 'has_errors=social&provider=<?php echo $_REQUEST['provider']; ?>';
 
                     <?php } ?>
 
@@ -784,6 +806,7 @@ class QikkerSocialLogin
     public function setupUserData($user_id, $user_fields) {
 
         $default_fields = _get_additional_user_keys(new WP_User());
+        $default_fields[] = 'user_email';
 
         $userdata = get_userdata($user_id);
 
@@ -912,7 +935,7 @@ class QikkerSocialLogin
      * If after all providers are processed we logged off from all providers
      * We'll logoff from WP it self.
      */
-    public function updateProfiles() {
+    public function updateSocialProfiles() {
 
         if (is_user_logged_in()) {
 
@@ -1267,6 +1290,77 @@ class QikkerSocialLogin
 
     }
 
+    public function update() {
+
+        $errors = new WP_Error();
+
+        $fields = self::getRegisterFields();
+
+        $user = wp_get_current_user();
+
+        $values = array('user_login' => '', 'user_email' => '');
+
+        //Required Fields Validation
+        foreach($fields as $field => $config) {
+
+            $values[$field] = isset($_POST[$field]) ? $_POST[$field] : '';
+
+            if ($field == 'user_login' || $field === 'user_email') {
+
+                continue;
+
+            }
+
+            if (isset($config['required']) && $config['required'] && empty($values[$field])) {
+
+                $errors->add( 'empty_' . $field, $config['required_error']);
+
+            }
+
+        }
+
+        $user_email = $user->user_email;
+
+        if ($values['user_email'] !== $user_email) {
+
+            /**
+             * Validates the USER_EMAIL based on WP_REGISTER CODE (run here to have all errors at once
+             */
+
+            $user_email = apply_filters( 'user_registration_email', $values['user_email'] );
+            if ( $user_email == '' ) {
+                $errors->add( 'empty_email', __( '<strong>ERROR</strong>: Please type your email address.' ) );
+            } elseif ( ! is_email( $user_email ) ) {
+                $errors->add( 'invalid_email', __( '<strong>ERROR</strong>: The email address isn&#8217;t correct.' ) );
+                $user_email = '';
+            } elseif ( email_exists( $user_email ) ) {
+                $errors->add( 'email_exists', __( '<strong>ERROR</strong>: This email is already registered, please choose another one.' ) );
+            }
+
+        }
+
+        $error = null;
+
+        if (!count($errors->get_error_codes())) {
+
+            $this->setupUserData(get_current_user_id(), $values);
+
+            return get_current_user_id();
+
+        } else {
+
+            $error = $errors;
+
+        }
+
+        if ($error) {
+
+            $this->filterErrors($errors, 'profile', $_SERVER['REQUEST_URI']);
+
+        }
+
+    }
+
     public function unlink($provider) {
 
         if ($provider === 'Facebook') {
@@ -1562,13 +1656,50 @@ class QikkerSocialLogin
 
     }
 
+    public function templateProfileForm($args = array()) {
+
+        $defaults = array(
+            'redirect'          => $this->getCurrentUrl(),
+            'form_action'       => $this->getCurrentUrl(array()),
+            'fields'            => $this->getRegisterFields(),
+            'form_id'           => 'registerform',
+            'label_register'    => __( 'Save' ),
+            'process'           => 'profile',
+            'field_action'      => self::ACTION_PROFILE
+
+        );
+
+        $args = apply_filters(self::PLUGIN_INITIALS . '_profile_form_args', shortcode_atts($defaults, $args), $args);
+
+        $message_args = $this->getFormErrors('profile');
+
+        if (isset($message_args['errors'])) { $args['errors'] = $message_args['errors']; }
+
+        if (isset($message_args['messages'])) { $args['messages'] = $message_args['messages']; }
+
+        if (isset($message_args['error_info'])) { $args['error_info'] = $message_args['error_info']; }
+
+        ob_start();
+
+        include $this->locateTemplate('forms/register.php');
+
+        $output = ob_get_contents();
+
+        ob_end_clean();
+
+        return $output;
+
+    }
+
     public function templateRegisterForm($args = array()) {
 
         $defaults = array(
             'redirect'          => $this->getCurrentUrl(),
-            'fields'            => QikkerSocialLogin::getRegisterFields(),
+            'form_action'       => $this->getLoginUrl(),
+            'fields'            => $this->getRegisterFields(),
             'form_id'           => 'registerform',
-            'label_register'    => __( 'Register' )
+            'label_register'    => __( 'Register' ),
+            'process'           => 'register'
 
         );
 

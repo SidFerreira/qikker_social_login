@@ -6,7 +6,7 @@
 
     }
 
-    if (is_user_logged_in()) {
+    if (is_user_logged_in() && $args['process'] == 'register') {
         ?>
 
         <a href="<?php echo QikkerSocialLogin::logoutHref($args['redirect']); ?>"
@@ -14,7 +14,7 @@
 
         <?php
 
-    } else {
+    } else if((is_user_logged_in() && $args['process'] == 'profile') || (!is_user_logged_in() && $args['process'] == 'register')) {
 
         if (isset($args['errors'])) {
 
@@ -30,13 +30,27 @@
 
 ?>
     <form name="registerform" id="registerform"
-          action="<?php echo QikkerSocialLogin::getLoginUrl() ?>"
-          class="registerform qsl__form qsl__form--register"
+          action="<?php echo $args['form_action']; ?>"
+          class="registerform qsl__form qsl__form--<?php echo $args['process']; ?>"
           method="post" novalidate="novalidate">
 
-        <?php foreach($args['fields'] as $field => $config) { $value = isset($_POST[$field]) ? $_POST[$field] : ''; ?>
+        <?php foreach($args['fields'] as $field => $config) { ?>
 
-            <?php do_action(QikkerSocialLogin::ACTION_BEFORE_REGISTER_FIELD, true, $field, $config); ?>
+            <?php
+
+                $value = isset($_POST[$field]) ? $_POST[$field] : '';
+
+                if (is_user_logged_in()) {
+
+                    $user = wp_get_current_user();
+
+                    $value = $user->get($field);
+
+                }
+
+            ?>
+
+            <?php do_action(QikkerSocialLogin::ACTION_BEFORE_REGISTER_FIELD, $field, $config); ?>
             <?php if (apply_filters(QikkerSocialLogin::FILTER_SHOW_REGISTER_FIELD, true, $field, $config)) { ?>
 
                 <p>
@@ -64,14 +78,28 @@
         <?php } ?>
 
         <?php
-        /**
-         * Fires following the 'Email' field in the user registration form.
-         *
-         * @since 2.1.0
-         */
-        do_action( 'register_form' );
+
+            if ($args['process'] == 'register') {
+
+                do_action( 'register_form' );
+
         ?>
-        <p id="reg_passmail"><?php _e( 'Registration confirmation will be emailed to you.' ); ?></p>
+
+            <p id="reg_passmail"><?php _e( 'Registration confirmation will be emailed to you.' ); ?></p>
+
+        <?php
+
+            } else if ($args['process'] == 'profile') {
+
+        ?>
+
+                <input type="hidden" name="action" value="<?php echo QikkerSocialLogin::ACTION_PROFILE; ?>" />
+
+        <?php
+
+            }
+
+        ?>
 
         <br class="clear" />
 
@@ -80,7 +108,7 @@
         <p class="submit">
 
             <input type="submit" name="wp-submit" id="wp-submit"
-                   class="button button-primary button-large qsl__register"
+                   class="button button-primary button-large qsl__<?php echo $args['process']; ?>"
                    value="<?=$args['label_register']; ?>" />
             
         </p>
