@@ -38,6 +38,8 @@ class QikkerSocialLogin
 
     const ACTION_AUTH       = 'qsl-do-social-auth';
 
+    const ACTION_AUTH_FAILED    = 'qsl-do-social-auth-failed';
+
     const ACTION_LOGIN      = 'qsl-do-social-login';
 
     const ACTION_LOGOUT     = 'qsl-do-social-logout';
@@ -482,15 +484,22 @@ class QikkerSocialLogin
 
         }
 
-        $this->getHybridAuthInstance();
+        try {
+
+            $this->getHybridAuthInstance();
+
+        } catch(Exception $e) {
+
+            $_GET['action'] = self::ACTION_AUTH_FAILED;
+
+        }
+
 
         if (!is_user_logged_in()) {
 
             if (isset($_GET['action']) && isset($_GET['provider'])) {
 
                 $provider = $_GET['provider'];
-
-                $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : false;
 
                 if ($_GET['action'] === self::ACTION_AUTH) {
 
@@ -502,28 +511,7 @@ class QikkerSocialLogin
 
                 }
 
-                if ($redirect_to) {
-
-                    if ($redirect_to === 'refresh_parent') {
-
-                        ?>
-                        <script>
-
-                            window.opener.location.reload();
-                            window.close();
-
-                        </script>
-                        <?php
-
-                    } else {
-
-                        wp_safe_redirect($redirect_to);
-
-                    }
-
-                    exit();
-
-                }
+                $this->processRedirection();
 
             } else if (isset($_GET['action'])) {
 
@@ -544,6 +532,57 @@ class QikkerSocialLogin
         if (is_user_logged_in()) {
 
             $this->updateProfiles();
+
+        }
+
+    }
+
+
+    public function processRedirection() {
+
+        $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : false;
+
+        if ($redirect_to) {
+
+            if ($redirect_to === 'refresh_parent') {
+
+
+                ?>
+
+                <script>
+
+                    var current_location = window.opener.location, redirect_url = current_location.href;
+
+                    <?php if ($_GET['action'] === self::ACTION_AUTH_FAILED) { ?>
+
+                    if (!current_location.search) {
+
+                        redirect_url += '?';
+
+                    } else {
+
+                        redirect_url += '&';
+
+                    }
+
+                    redirect_url += 'has_errors=social&provider=<?php echo $_GET['provider']; ?>';
+
+                    <?php } ?>
+
+                    window.opener.location.href = redirect_url;
+                    window.close();
+
+                </script>
+
+                <?php
+
+            } else {
+
+                wp_safe_redirect($redirect_to);
+
+            }
+
+            exit();
 
         }
 
