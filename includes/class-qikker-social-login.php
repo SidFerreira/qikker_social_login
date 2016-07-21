@@ -51,7 +51,7 @@ class QikkerSocialLogin
     const NONCE_LOGIN           = 'qsl_login';
 
     /* Same pattern as ACF */
-    const USER_AVATAR       = 'user_avatar';
+    const USER_AVATAR           = 'user_avatar';
 
     const USER_PROVIDED_EMAIL   = 'qsl_user_provided_email';
 

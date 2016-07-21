@@ -50,8 +50,8 @@
 
             ?>
 
-            <?php do_action(QikkerSocialLogin::ACTION_BEFORE_REGISTER_FIELD, $field, $config); ?>
-            <?php if (apply_filters(QikkerSocialLogin::FILTER_SHOW_REGISTER_FIELD, true, $field, $config)) { ?>
+            <?php do_action(QikkerSocialLogin::ACTION_BEFORE_REGISTER_FIELD, $field, $config, $value); ?>
+            <?php if (apply_filters(QikkerSocialLogin::FILTER_SHOW_REGISTER_FIELD, true, $field, $config, $value)) { ?>
 
                 <p>
 
