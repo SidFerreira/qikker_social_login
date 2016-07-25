@@ -735,6 +735,8 @@ class QikkerSocialLogin
 
         }
 
+        return $errors;
+
     }
 
     #endregion
