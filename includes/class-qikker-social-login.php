@@ -1419,6 +1419,16 @@ class QikkerSocialLogin
 
         $username = $this->getUsernameFromEmail($email);
 
+        if (apply_filters('qikker-social-login_mute_emails_for_social', false)) {
+
+            remove_action( 'register_new_user',      'wp_send_new_user_notifications' );
+            remove_action( 'edit_user_created_user', 'wp_send_new_user_notifications', 10 );
+            remove_action( 'network_site_new_created_user',   'wp_send_new_user_notifications' );
+            remove_action( 'network_site_users_created_user', 'wp_send_new_user_notifications' );
+            remove_action( 'network_user_new_created_user',   'wp_send_new_user_notifications' );
+
+        }
+
         $user_id_or_error = register_new_user($username, $email); //new WP_Error('algum erro');//
 
         if (is_wp_error($user_id_or_error)) {
