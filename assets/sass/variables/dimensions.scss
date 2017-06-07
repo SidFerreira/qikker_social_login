@@ -1,0 +1,23 @@
+// Variable dimensions are declared in this file. Only place variables here that are in use in several files in your source; if a variable is used in only one element then declare in the file corresponding to that element.
+
+// Gutter width variable, for use in own code and also used in the bootstrap grid.
+$gutter: 30px;
+
+// Extra large gutter value, often used for items that are designed with a larger than default gutter.
+$large_gutter: 60px;
+
+// Small gutter, often used for the padding of the blocks you display inside the grid columns.
+$small_gutter: 15px;
+
+// Global border radius setting
+$global_border_radius: 7px;
+
+// Media query breakpoint variables.
+$sm_mediaquery_width: 768px;
+$md_mediaquery_width: 992px;
+$lg_mediaquery_width: 1200px;
+
+// Widths used for bootstrap container widths.
+$sm_container_width: 750px;
+$md_container_width: 970px;
+$lg_container_width: 1170px;

@@ -1,0 +1,87 @@
+/// Mixin that generated cross-browser CSS transitions.
+/// Uses the $global-easing variable by default (when transitioning a single CSS property)
+/// $global-easing usage can be overridden when you want to transition multiple CSS properties independantly.
+///
+/// @author Gerben van Dijk, Qikker Online
+///
+/// @access public
+///
+/// @param {string} $args - String containing standard-compliant CSS transition properties.
+/// @param {bool} $custom-easing [false] - Toggle automatic insertion of the $global-easing variable (useful when transitioning multiple CSS properties and for custom easings)
+///
+/// @example scss - Usage
+///
+///     .foo {
+///
+///         @include transition('height 0.3s');
+///
+///     }
+///
+///     .bar {
+///
+///         @include transition('height 0.3s linear, opacity 0.2s #{$global-easing}', true);
+///
+///     }
+///
+/// @example css - CSS output
+///
+///     .foo {
+///
+///         -webkit-transition: height 0.3s cubic-bezier(0.16, 0.68, 0.43, 0.99);
+///         -moz-transition: height 0.3s cubic-bezier(0.16, 0.68, 0.43, 0.99);
+///         -ms-transition: height 0.3s cubic-bezier(0.16, 0.68, 0.43, 0.99);
+///         -o-transition: height 0.3s cubic-bezier(0.16, 0.68, 0.43, 0.99);
+///         transition: height 0.3s cubic-bezier(0.16, 0.68, 0.43, 0.99);
+///
+///     }
+///
+///     .bar {
+///
+///         -webkit-transition: height 0.3s linear, opacity 0.2s cubic-bezier(0.16, 0.68, 0.43, 0.99);
+///         -moz-transition: height 0.3s linear, opacity 0.2s cubic-bezier(0.16, 0.68, 0.43, 0.99);
+///         -ms-transition: height 0.3s linear, opacity 0.2s cubic-bezier(0.16, 0.68, 0.43, 0.99);
+///         -o-transition: height 0.3s linear, opacity 0.2s cubic-bezier(0.16, 0.68, 0.43, 0.99);
+///         transition: height 0.3s linear, opacity 0.2s cubic-bezier(0.16, 0.68, 0.43, 0.99);
+///
+///     }
+
+
+@mixin transition($transition, $custom-easing : false) {
+
+    // First we check if transitions are enabled or not
+    @if $enable_transitions == 'yes' {
+
+        // If custom-easing is enabled, we append the $global-easing variable
+        @if $custom-easing == false {
+
+            // If custom easing is false, but we still detect a comma in the $transition string, we throw an error (str-index returns null if there are no occurences).
+            @if str-index(unquote($transition), unquote(',')){
+
+                @error 'It seems like you are trying to transition multiple CSS properties. Please look into the documentation of the transition mixin.';
+
+            }
+
+            // add check if there is a comma in the $transition string.
+
+            -webkit-transition: unquote($transition) $global_easing;
+            -moz-transition: unquote($transition) $global_easing;
+            -ms-transition: unquote($transition) $global_easing;
+            -o-transition: unquote($transition) $global_easing;
+            transition: unquote($transition) $global_easing;
+
+        }
+
+        // If it's disabled, we simply use the transition (and nothing more)
+        @else {
+
+            -webkit-transition: unquote($transition);
+            -moz-transition: unquote($transition);
+            -ms-transition: unquote($transition);
+            -o-transition: unquote($transition);
+            transition: unquote($transition);
+
+        }
+
+    }
+
+}

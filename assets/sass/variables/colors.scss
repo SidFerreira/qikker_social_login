@@ -1,0 +1,100 @@
+// Define colors by their name here (e.g. red or blue).
+$black: #000000;
+$white: #ffffff;
+$red: red;
+$green: green;
+
+// Base colors. Define brand colors here.
+$brand_colors: (
+
+    'primary': (
+
+        base: $red
+
+    ),
+
+    'secondary': (
+
+        base: $green
+
+    ),
+
+);
+
+// Colors of all the elements. Reference to brand colors or color variables. It's also OK to simply set a color variable here when it's unique to that element.
+// Do not remove this array of colors; it is used by default in the color() mixin.
+$ui_colors: (
+
+	// Default (minimum) styles for buttons (see /common/buttons/_buttons.scss)
+	'buttons': (
+
+		primary_bg: color('primary', 'base', $brand-colors),
+		primary_text: $white,
+		primary_hover: darken(color('primary', 'base', $brand-colors), 10%),
+		secondary_bg: color('secondary', 'base', $brand-colors),
+		secondary_text: $black,
+		secondary_hover: darken(color('secondary', 'base', $brand-colors), 10%),
+		ghost_bg: transparent,
+		ghost_text: color('primary', 'base', $brand-colors),
+		ghost_hover: darken(color('primary', 'base', $brand-colors), 10%),
+
+	),
+
+    // Default (minimum) styles for content (see /common/content/_content.scss)
+    'content': (
+
+        base: $black, // all text inside the .content element will inherit this color by default, unless overriden
+		intro: color('primary', 'base', $brand_colors),
+		highlight: color('secondary', 'base', $brand_colors),
+        link: color('primary', 'base', $brand_colors),
+        table-even-bg: $black,
+        table-even-fg: $white,
+        table-even-link: $white,
+        table-odd-bg: $white,
+        table-odd-fg: $black,
+        table-odd-link: $black
+
+    ),
+
+    // Default (minimum) styles for forms (see /common/forms/_forms.scss)
+    'form': (
+
+		base: $black,
+		field-bg: $white,
+		field-text: $black,
+		label-text: $black,
+		validation-bg: red,
+		validation-text: $white,
+		validation-field-border: $black,
+		validation-main-bg: red,
+		validation-main-text: $white
+
+	),
+
+	// Colors used in the WP-login screen (see /sass/wp-login.scss)
+	'wp-login': (
+
+		base: color('primary', 'base', $brand_colors),
+		links: $white
+
+	),
+
+    // Commonly used social media brand colors
+	// source: http://brandcolors.net/
+	// dev request: https://podio.com/qikkeronline/qikker-online-internal-development/apps/gromit/items/22
+	'brands': (
+
+		'facebook': #3b5998,
+		'twitter': #55acee,
+		'pinterest': #cc2127,
+		'instagram': #3f729b,
+		'google_plus': #dd4b39,
+		'whatsapp': #4dc247,
+		'spotify': #4DA400,
+		'youtube': #C4302B,
+		'wordpress': #21759b,
+		'soundcloud': #ff3300
+		
+	)
+
+);

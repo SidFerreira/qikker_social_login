@@ -1,0 +1,7 @@
+// iOS input reset
+input[type=text], input[type=textarea], input[type=submit], textarea, button {
+
+    @include border-radius($global_border_radius);
+    -webkit-appearance: none;
+
+}
